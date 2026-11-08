@@ -245,7 +245,7 @@ export class Game {
     if (this.state !== 'play') return;
     this.handleInput();
     const paused = !!this.ui.screen;
-    if (paused) return;
+    if (paused) { this.ui.update(dt); return; }
     const freeMove = !this.ui.dialogueActive && !this.cinematic;
     if (!this.photoMode.active) {
       this.follow.update(dt, this.input, p, freeMove && (this.input.locked || this.input.pad));
