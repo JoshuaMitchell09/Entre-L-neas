@@ -1,0 +1,25 @@
+ENTRE LÍNEAS · FOTÓGRAFO DE LA LIGA TICA  (Windows 10/11, 64 bits)
+=====================================================================
+
+CÓMO JUGAR
+  1. Descomprimí toda la carpeta (no ejecutes desde dentro del ZIP).
+  2. Doble clic en "Entre Lineas.exe".
+     Si Windows muestra "Windows protegió su PC": clic en "Más información" -> "Ejecutar de todas formas".
+     (Aparece porque el ejecutable no está firmado digitalmente.)
+  3. Hacé clic en la ventana para capturar el ratón. F11 = pantalla completa.
+
+TUS SONIDOS
+  Copiá tus audios a la carpeta "audio" que está junto al .exe
+  (menu.m4a, cueva_1.m4a, alajuela_1.m4a, etc.; ver audio\LEEME.txt).
+  También podés cargarlos dentro del juego: Ajustes -> Audio -> Tus sonidos.
+
+CONTROL DE PS5 / XBOX
+  Conectalo por USB o Bluetooth antes de abrir el juego y presioná cualquier botón.
+
+FOTOS EXPORTADAS
+  Se guardan en  Imágenes\Entre Lineas
+
+RENDIMIENTO
+  Si va lento: Ajustes -> Gráficos -> Calidad "Bajo" o "Medio" y bajá la escala de resolución.
+  En portátiles con dos tarjetas gráficas, elegí la dedicada para "Entre Lineas.exe"
+  (Configuración de Windows -> Pantalla -> Gráficos).

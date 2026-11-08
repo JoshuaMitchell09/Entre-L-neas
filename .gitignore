@@ -3,3 +3,7 @@ dist/
 *.log
 public/audio/*
 !public/audio/LEEME.txt
+desktop/node_modules/
+desktop/web/
+release/
+desktop/audio/
