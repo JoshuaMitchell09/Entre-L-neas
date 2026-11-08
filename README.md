@@ -43,7 +43,8 @@ El encargo pedía *preferiblemente* Unity 6. El entorno en el que se desarrolló
 | Elegir parámetro / cambiar valor | `Q` `E` / `Z` `X` | L1 R1 / cruceta ← → |
 | Autofoco | `F` | R3 |
 | Individual / ráfaga | `R` | □ (en el visor) |
-| Cambiar batería | `B` | Panel táctil |
+| Cambiar batería | `B` | Panel táctil (con el visor arriba) |
+| Teléfono | `H` | Panel táctil (sin el visor) |
 | Inventario · Misiones · Mapa · Galería | `I` · `J` · `M` · `P` | Cruceta ↑ · ↓ · ← · → |
 | Equipo | `Tab` | Create |
 | Pausa | `Esc` | Options |
@@ -55,6 +56,26 @@ El encargo pedía *preferiblemente* Unity 6. El entorno en el que se desarrolló
 Todos los controles son reasignables en **Pausa → Ajustes → Teclas**.
 
 ---
+
+## Novedades
+
+- **Llegar horas antes al estadio.** En la redacción, cada cobertura tiene un selector de *Hora de llegada*: normal (30 min antes), o 1, 2 o 3 horas antes. En arcade existe la opción *Llegar 2,5 h antes*.
+  - El estadio se va llenando poco a poco (la barra y las filas de abajo llegan primero).
+  - Los encargados de cancha recorren el campo vacío, y los equipos salen a calentar 45 min antes del saque.
+  - La luz cambia con la hora real: si llegás a las 5 p. m. a un partido nocturno, ves caer la tarde.
+  - Llegar temprano suma reputación en la liquidación.
+- **Teléfono** (`H` / panel táctil):
+  - **Mensajes:** familia (Mamá, Papá, Valeria, Abuela Rosa), amigos (Diego, Andrés), Kendall, Mariana y el editor. Te escriben solos según lo que pasa (llegada, goles, final) y responden mientras escriben («escribiendo…»).
+  - **Lente:** una red social para publicar tus fotos. Los "me gusta", los comentarios y los seguidores crecen según la calidad de la foto, y Ascenso Total comparte las mejores.
+  - **Entradas:** de vez en cuando Mariana, el club o Kendall te regalan cortesías. Se las podés dar a tu familia o a tus amigos, y en la siguiente cobertura aparecen en primera fila de la platea con un rótulo con tu nombre. Podés saludarlos y fotografiarlos.
+  - **Reloj:** muestra cuánto falta para el saque y te deja esperar 15 min, 30 min, 1 h, hasta el calentamiento o hasta 10 min antes.
+- **Público más vivo y realista:**
+  - Figuras más detalladas y variadas: pelo, gorras con los colores del equipo, mangas cortas, pantalones y niños.
+  - Siguen el balón con la cabeza, aplauden, hacen la ola y la barra salta y canta.
+  - Cuando te acercás a la gradería se giran, te saludan y te gritan. Si les apuntás con la cámara, posan.
+  - A veces un aficionado te pide una foto: aparece un marcador 📸 sobre él. Si se la tomás, ganás seguidores en Lente.
+- **Puerta de seguridad nueva:** puerta automática de vidrio transparente, corrediza, con marco de aluminio y sensor. Se abre sola al acercarte una vez que pasaste el control.
+  - Antes había una pared detrás de la puerta y el jugador la atravesaba. Ahora la puerta da directo al pasillo.
 
 ## Qué está implementado (y funciona)
 
