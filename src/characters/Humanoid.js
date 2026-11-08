@@ -21,6 +21,7 @@ function geos() {
   G.calf = new THREE.SphereGeometry(0.062, 10, 8); G.calf.scale(1, 1.8, 1.05);
   G.foot = new THREE.CapsuleGeometry(0.048, 0.16, 4, 8); G.foot.rotateX(Math.PI / 2); G.foot.scale(1.05, 0.75, 1); G.foot.translate(0, -0.035, 0.055);
   G.joint = new THREE.SphereGeometry(1, 10, 8);
+  G.band = new THREE.CylinderGeometry(0.06, 0.06, 0.075, 14);
   G.ear = new THREE.SphereGeometry(0.022, 8, 6); G.ear.scale(0.6, 1.3, 1);
   G.eye = new THREE.SphereGeometry(0.014, 6, 4);
   G.nose = new THREE.ConeGeometry(0.018, 0.04, 5); G.nose.rotateX(Math.PI / 2);
@@ -92,6 +93,7 @@ export class Humanoid {
     for (const sd of [-1, 1]) {
       const sh = P(this.spine, sd * 0.205, 0.42, 0);
       mk(g.joint, sleeveC, sh, 0, 0, 0, 0.068, 0.068, 0.068);
+      if (o.armband && sd > 0) mk(g.band, col('#f2c500'), sh, 0, -0.17, 0);
       mk(g.upperArm, o.longSleeves ? sleeveC : skin, sh);
       if (!o.longSleeves) mk(g.sleeve, sleeveC, sh, 0, -0.01, 0);
       const el = P(sh, 0, -0.285, 0);
@@ -160,7 +162,11 @@ export class Humanoid {
     return { hipY: 0, hipRX: 0, hipRZ: 0, rootRX: 0, rootRZ: 0, spineRX: 0, spineRY: 0, spineRZ: 0, headRX: 0, headRY: 0,
       shL: [0, 0, 0], shR: [0, 0, 0], elL: 0, elR: 0, thL: [0, 0], thR: [0, 0], knL: 0, knR: 0, ftL: 0, ftR: 0 };
   }
-  play(state, dur = 1, side = 1) { this.state = state; this.stateT = 0; this.stateDur = dur; this.side = side; }
+  play(state, dur = 1, side = 1) {
+    if (state === 'getup') this.getupFrom = { rx: this.pose.rootRX, rz: this.pose.rootRZ, hip: this.pose.hipY };
+    if (state === 'ragdoll') { const d = this.fallDir || { x: 0, z: 1 }; const l = Math.hypot(d.x, d.z) || 1; this.rag = { th: 0.05, w: 1.6 + Math.random() * 1.6, dx: d.x / l, dz: d.z / l, ground: false, impact: 0, seed: Math.random() * 10 }; }
+    this.state = state; this.stateT = 0; this.stateDur = dur; this.side = side;
+  }
   get stateProgress() { return clamp(this.stateT / this.stateDur, 0, 1); }
 
   // Calcula pose objetivo según estado.
@@ -209,12 +215,33 @@ export class Humanoid {
         p.spineRX = t < 0.5 ? -0.35 * jump : 0.35 * jump; p.headRX = t < 0.5 ? -0.4 : 0.5;
         break;
       }
-      case 'dive': { // Estirada del portero hacia 'side'
-        const k = smooth(clamp(t / 0.35, 0, 1)), fall = smooth(clamp((t - 0.35) / 0.4, 0, 1));
-        p.rootRZ = -s * (k * 1.25); p.hipY = k * 0.45 * (1 - fall) - fall * 0.62;
-        p.shL = [-2.6 * k, 0, -0.3 * k]; p.shR = [-2.6 * k, 0, 0.3 * k]; p.elL = p.elR = -0.1;
-        p.thL = [0.2 * k, -0.3 * k]; p.thR = [0.1 * k, 0.3 * k]; p.knL = 0.5 * k; p.knR = 0.2 * k;
-        p.headRY = s * 0.3 * k;
+      case 'dive': { // Estirada del portero: carga, vuelo horizontal, caída y rebote
+        const prep = clamp(t / 0.12, 0, 1), fly = clamp((t - 0.1) / 0.42, 0, 1), land = clamp((t - 0.5) / 0.2, 0, 1);
+        const a = smooth(fly) * 1.42;
+        p.rootRZ = -s * a;
+        p.hipY = -0.2 * prep * (1 - fly) + Math.sin(fly * Math.PI) * 0.5 * (1 - land) - 0.6 * smooth(land) + Math.sin(land * Math.PI) * 0.07;
+        const reach = 1 - land * 0.35;
+        p.shL = [-0.4 * prep - 2.55 * fly * reach, 0, -0.2 - 0.2 * fly]; p.shR = [-0.4 * prep - 2.55 * fly * reach, 0, 0.2 + 0.2 * fly];
+        p.elL = p.elR = -0.5 * (1 - fly) - 0.05 - land * 0.4;
+        p.thL = [-0.5 * prep + 0.35 * fly, -0.35 * fly]; p.thR = [-0.5 * prep - 0.1 * fly, 0.35 * fly]; p.knL = 0.9 * prep * (1 - fly) + 0.7 * fly; p.knR = 0.9 * prep * (1 - fly) + 0.25 * fly;
+        p.spineRX = 0.3 * prep * (1 - fly) - 0.1 * fly; p.spineRZ = -s * 0.15 * fly; p.headRY = s * 0.35 * fly; p.headRX = -0.2 * fly;
+        break;
+      }
+      case 'ragdoll': { // Caída física tipo muñeco de trapo (péndulo invertido + extremidades flojas)
+        const R = this.rag;
+        if (R) {
+          if (!R.ground) { R.w += 11 * Math.sin(Math.max(R.th, 0.06)) * dt; R.th += R.w * dt; if (R.th >= 1.47) { R.th = 1.47; R.w = -R.w * 0.25; R.ground = true; R.impact = 1; } }
+          else { R.th = Math.min(1.5, R.th + R.w * dt); R.w += (1.47 - R.th) * 40 * dt; R.w *= Math.pow(0.01, dt); }
+          R.impact = Math.max(0, R.impact - dt * 1.4);
+          const th = R.th, k = th / 1.47, j = (i) => Math.sin(this.stateT * (19 + i * 3) + R.seed + i) * R.impact * 0.55;
+          p.rootRX = -th * R.dz; p.rootRZ = -th * R.dx;
+          p.hipY = -0.74 * k * k + (R.ground ? Math.abs(Math.sin(this.stateT * 9)) * 0.05 * R.impact : 0);
+          p.shL = [-0.6 - 1.2 * k * R.dz + j(1), 0.2, -0.5 - 0.8 * k + j(2)]; p.shR = [-0.4 - 1.4 * k * R.dz + j(3), -0.2, 0.6 + 0.7 * k + j(4)];
+          p.elL = -0.3 - 0.6 * k + j(5); p.elR = -0.5 - 0.4 * k + j(6);
+          p.thL = [-0.2 - 0.5 * k + j(7) * 0.6, -0.15]; p.thR = [0.15 - 0.3 * k + j(8) * 0.6, 0.2]; p.knL = 0.3 + 0.5 * k + j(9) * 0.5; p.knR = 0.6 + 0.4 * k + j(10) * 0.5;
+          p.spineRX = 0.15 * k + j(11) * 0.3; p.headRX = 0.35 * k + j(12) * 0.4; p.headRY = R.dx * 0.5 * k;
+          this.lambdaNow = R.ground ? 8 : 16;
+        }
         break;
       }
       case 'slide': { // Barrida
@@ -233,10 +260,11 @@ export class Humanoid {
         p.headRX = 0.3; p.spineRX = 0.2;
         break;
       }
-      case 'getup': {
-        const k = 1 - smooth(t);
-        p.rootRX = -1.4 * k; p.hipY = -0.75 * k; p.knL = p.knR = 1.4 * k; p.thL = p.thR = [-1.0 * k, 0];
-        p.shL = [-0.6 * k, 0, -0.4]; p.shR = [-0.6 * k, 0, 0.4]; p.spineRX = 0.6 * k;
+      case 'getup': { // Levantarse desde la postura en que quedó (de frente, de espaldas o de costado)
+        const f = this.getupFrom || { rx: -1.4, rz: 0, hip: -0.75 }, k = 1 - smooth(t), push = Math.sin(t * Math.PI);
+        p.rootRX = f.rx * k; p.rootRZ = f.rz * k; p.hipY = f.hip * k - push * 0.12;
+        p.knL = p.knR = 1.5 * push + 0.1; p.thL = p.thR = [-1.1 * push, 0];
+        p.shL = [-0.9 * push, 0, -0.5]; p.shR = [-0.9 * push, 0, 0.5]; p.elL = p.elR = -0.3; p.spineRX = 0.55 * push;
         break;
       }
       case 'celebrate': { // Carrera con brazos abiertos / puño al aire
@@ -304,13 +332,15 @@ export class Humanoid {
       }
       case 'wave': { loco(); const w = Math.sin(this.breath * 6); p.shR = [-2.6, 0, 0.5 + w * 0.3]; p.elR = -0.4; break; }
       case 'clipboard': { loco(); p.shL = [-0.8, 0.2, 0]; p.elL = -1.3; p.shR = [-0.6, -0.2, 0]; p.elR = -1.4; p.headRX = 0.35; break; }
-      case 'gkReady': { // Portero preparado
-        p.hipY = -0.12; p.thL = [-0.35, -0.15]; p.thR = [-0.35, 0.15]; p.knL = p.knR = 0.7; p.spineRX = 0.35; p.headRX = -0.3;
-        p.shL = [-0.6, 0, -0.6]; p.shR = [-0.6, 0, 0.6]; p.elL = p.elR = -0.5;
-        if (sp > 0.3) { const sn = Math.sin(this.phase * 1.3); p.thL[1] -= sn * 0.15; p.thR[1] -= sn * 0.15; }
+      case 'gkReady': { // Portero en guardia: rebote sobre la punta de los pies, manos activas, desplazamiento lateral
+        const b = Math.abs(Math.sin(this.breath * 3.6)), sw = Math.sin(this.breath * 1.7);
+        p.hipY = -0.14 + b * 0.035; p.thL = [-0.38, -0.17]; p.thR = [-0.38, 0.17]; p.knL = p.knR = 0.72 - b * 0.08; p.ftL = p.ftR = 0.12 * b;
+        p.spineRX = 0.33 + sw * 0.03; p.headRX = -0.3; p.headRY = sw * 0.08;
+        p.shL = [-0.65 + sw * 0.1, 0, -0.55]; p.shR = [-0.65 - sw * 0.1, 0, 0.55]; p.elL = p.elR = -0.55;
+        if (sp > 0.3) { const sn = Math.sin(this.phase * 1.4); p.thL[1] = -0.17 - Math.max(0, sn) * 0.3; p.thR[1] = 0.17 + Math.max(0, -sn) * 0.3; p.hipY += Math.abs(sn) * 0.03; }
         break;
       }
-      case 'catch': { p.shL = [-1.3, 0.3, 0]; p.shR = [-1.3, -0.3, 0]; p.elL = p.elR = -1.4; p.spineRX = 0.35; p.knL = p.knR = 0.3; break; }
+      case 'catch': { const k = smooth(clamp(t / 0.2, 0, 1)); p.shL = [-1.6 + 0.3 * k, 0.35 * k, 0]; p.shR = [-1.6 + 0.3 * k, -0.35 * k, 0]; p.elL = p.elR = -0.6 - 0.9 * k; p.spineRX = 0.15 + 0.3 * k; p.knL = p.knR = 0.2 + 0.25 * k; p.hipY = -0.08 * k; break; }
       case 'stretch': { // Calentamiento: estiramiento de cuádriceps alternado
         const sw = Math.sin(this.breath * 0.8) > 0;
         if (sw) { p.knL = 2.4; p.thL = [0.25, 0]; p.shL = [0.4, 0, -0.2]; p.elL = -1.0; p.shR = [-0.2, 0, 0.4]; }
@@ -334,8 +364,9 @@ export class Humanoid {
     this.stateT += dt;
     const stepFreq = speed < 2.2 ? 1.8 + speed * 0.9 : 2.8 + speed * 0.42;
     this.phase += dt * stepFreq * Math.PI * (speed > 0.05 ? 1 : 0);
+    this.lambdaNow = null;
     const tp = this.target(dt);
-    const P = this.pose, L = this.lambda;
+    const P = this.pose, L = this.lambdaNow ?? ({ dive: 24, kick: 20, header: 20, slide: 18, getup: 9, catch: 18 }[this.state] || this.lambda);
     for (const k in tp) {
       if (Array.isArray(tp[k])) { for (let i = 0; i < tp[k].length; i++) P[k][i] = damp(P[k][i], tp[k][i], L, dt); }
       else P[k] = damp(P[k], tp[k], L, dt);

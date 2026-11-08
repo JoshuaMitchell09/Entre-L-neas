@@ -6,7 +6,8 @@ export class Rules {
   activeRestricted() {
     const g = this.game, st = g.stadium, m = g.match; if (!st) return [];
     const playing = m && PLAY_PHASES.has(m.phase);
-    return st.zones.restricted.filter((z) => z.when === 'always' || (z.when === 'play' && playing));
+    const photo = m && m.phase === 'teamphoto';
+    return st.zones.restricted.filter((z) => (z.when === 'always' && !(photo && z.id === 'pitch')) || (z.when === 'play' && playing));
   }
   update(dt) {
     const g = this.game, st = g.stadium; if (!st || !g.inEvent) { this.label = null; return; }
@@ -21,7 +22,10 @@ export class Rules {
       this.label = { text: `⚠ ZONA RESTRINGIDA: ${z.name.toUpperCase()}`, bad: true };
     } else {
       this.inZone = null; this.zoneT = 0;
-      this.label = this.lockout > 0 ? { text: `RETIRADO DE LA ZONA DE PRENSA · ${Math.ceil(this.lockout)} s`, bad: true } : press ? { text: press.name.toUpperCase() } : null;
+      const des = g.story?.designated, firstOrSecond = g.match && ['walkout', 'restart', 'play', 'goal'].includes(g.match.phase);
+      this.label = this.lockout > 0 ? { text: `RETIRADO DE LA ZONA DE PRENSA · ${Math.ceil(this.lockout)} s`, bad: true }
+        : g.match?.phase === 'teamphoto' && Math.abs(p.x) < 53 && Math.abs(p.z) < 35 ? { text: 'FOTO OFICIAL · CAMPO HABILITADO' }
+        : press ? { text: press.name.toUpperCase() + (des && firstOrSecond && press.id !== des.id && press.id.startsWith('press') ? ' · NO ASIGNADA' : des && press.id === des.id ? ' · TU ZONA' : '') } : null;
     }
   }
   callSteward() {

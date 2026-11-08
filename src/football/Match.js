@@ -26,6 +26,9 @@ export const EVENT_INFO = {
   calentamiento: { label: 'Calentamiento', weight: 34, sigma: 99, window: 999 },
   final: { label: 'Final del partido', weight: 70, sigma: 6, window: 14 },
   saque: { label: 'Saque inicial', weight: 40, sigma: 0.6, window: 1.5 },
+  salida: { label: 'Salida de los equipos', weight: 58, sigma: 6, window: 16 },
+  formacion: { label: 'Foto oficial del equipo', weight: 64, sigma: 5, window: 12 },
+  sorteo: { label: 'Sorteo de la moneda', weight: 70, sigma: 0.9, window: 3 },
 };
 // Formación 4-4-2 en marco de ataque: x de -1 (propia portería) a 1 (rival); z de -1 a 1.
 const FORM = [
@@ -43,9 +46,10 @@ export class Match {
     this.feed = []; this.goalScorers = [];
     for (let t = 0; t < 2; t++) {
       const sq = squad(this.teams[t].id);
-      FORM.forEach(([role, fx, fz], i) => { const p = new Footballer(this.scene, this.teams[t], t, sq[i], role, { fx, fz }); p.noTouch = 0; this.players[t].push(p); });
+      FORM.forEach(([role, fx, fz], i) => { const p = new Footballer(this.scene, this.teams[t], t, sq[i], role, { fx, fz }, i === 6); p.noTouch = 0; this.players[t].push(p); });
     }
     this.all = [...this.players[0], ...this.players[1]];
+    this.captains = [this.players[0][6], this.players[1][6]]; this.sideSign = 1;
     this.buildOfficials(); this.buildBench(); this.setupWarmup();
   }
   // ---------- Construcción ----------
@@ -55,6 +59,10 @@ export class Match {
     this.ars = [{ h: mk('#f2e600'), pos: new THREE.Vector3(20, 0, -HW - 0.8), vel: new THREE.Vector3(), yaw: 0, kind: 'referee', side: 1, name: 'Asistente' },
       { h: mk('#f2e600'), pos: new THREE.Vector3(-20, 0, HW + 0.8), vel: new THREE.Vector3(), yaw: Math.PI, kind: 'referee', side: -1, name: 'Asistente' }];
     for (const o of [this.ref, ...this.ars]) { this.scene.add(o.h.root); o.h.root.position.copy(o.pos); }
+    this.ref.card = new THREE.Mesh(new THREE.PlaneGeometry(0.075, 0.105), new THREE.MeshStandardMaterial({ color: 0xffd400, side: THREE.DoubleSide, roughness: 0.4 }));
+    this.ref.card.position.set(0, -0.33, 0.035); this.ref.card.visible = false; this.ref.h.arms[1].el.add(this.ref.card);
+    this.coin = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.006, 24), [new THREE.MeshStandardMaterial({ color: 0xb08d57, metalness: 0.9, roughness: 0.3 }), new THREE.MeshStandardMaterial({ color: 0xe6c35c, metalness: 1, roughness: 0.25 }), new THREE.MeshStandardMaterial({ color: 0xc0c4c8, metalness: 1, roughness: 0.25 })]);
+    this.coin.visible = false; this.coin.castShadow = true; this.scene.add(this.coin);
   }
   buildBench() {
     this.bench = [];
@@ -97,7 +105,7 @@ export class Match {
     this.logEvent('calentamiento', [], new THREE.Vector3(), { persistent: true });
   }
   // ---------- Utilidades ----------
-  dir(team) { return (team === 0) === (this.half === 1) ? 1 : -1; }
+  dir(team) { return ((team === 0) === (this.half === 1) ? 1 : -1) * (this.sideSign || 1); }
   goalX(team) { return this.dir(team) * HL; }
   opp(t) { return 1 - t; }
   active(t) { return this.players[t].filter((p) => !p.sentOff); }
@@ -118,15 +126,102 @@ export class Match {
   }
   addFeed(text) { this.feed.unshift({ text, minute: Math.floor(this.minute), t: this.time }); if (this.feed.length > 6) this.feed.pop(); this.game.events.emit('match:feed', text); }
   // ---------- Fases ----------
-  startMatch() {
+  startMatch(skipCeremony = false) {
     if (this.phase !== 'warmup') return;
     for (const wb of this.warmBalls) { this.scene.remove(wb.mesh); }
     this.warmBalls = [];
-    for (const p of this.all) p.warm = null;
+    for (const p of this.all) { p.warm = null; p.h.play(p.role === 'GK' ? 'gkReady' : 'loco'); p.anim = 'loco'; p.lock = 0; }
     this.events = this.events.filter((e) => e.type !== 'calentamiento');
-    this.phase = 'walkout'; this.phaseT = 0; this.kickoffTeam = Math.random() < 0.5 ? 0 : 1;
-    this.addFeed('Los equipos se acomodan para el saque inicial.');
-    this.game.events.emit('match:phase', 'walkout');
+    this.kickoffTeam = Math.random() < 0.5 ? 0 : 1;
+    if (skipCeremony) {
+      this.phase = 'walkout'; this.phaseT = 0;
+      this.addFeed('Los equipos se acomodan para el saque inicial.');
+      this.game.events.emit('match:phase', 'walkout'); return;
+    }
+    // Ceremonia: túnel -> alineación -> foto oficial -> sorteo -> posiciones
+    this.phase = 'tunnel'; this.phaseT = 0;
+    const offs = [[0, 0], [-0.9, 0], [0.9, 0]];
+    [this.ref, ...this.ars].forEach((o, i) => { o.pos.set(offs[i][0], 0, HW + 12.5); o.cer = { delay: 0.5, target: new THREE.Vector3(offs[i][0] * 1.4, 0, 3.2) }; });
+    for (let t = 0; t < 2; t++) this.players[t].forEach((p, i) => {
+      const order = (i + 1) % 11; // el capitán al frente después del portero
+      p.pos.set(t ? 0.85 : -0.85, 0, HW + 14 + order * 1.25); p.vel.set(0, 0, 0); p.yaw = Math.PI; p.mode = 'ceremony';
+      p.cer = { delay: 1.2 + order * 0.55, target: new THREE.Vector3((t ? 1 : -1) * (2.4 + order * 1.15), 0, 3.2) };
+    });
+    this.addFeed('¡Salen los equipos al terreno de juego!'); this.excite = 0.7; this.game.audio?.goalRoar(0.6);
+    this.logEvent('salida', this.all.slice(0, 6), new THREE.Vector3(0, 0, HW), { team: 0 });
+    this.game.events.emit('match:phase', 'ceremony');
+  }
+  cerMove(o, dt, speed = 1.55) {
+    const t = o.cer.target, dx = t.x - o.pos.x, dz = t.z - o.pos.z, d = Math.hypot(dx, dz);
+    if (d > 0.08) { const v = Math.min(speed, d * 1.5); o.vel.set(dx / d * v, 0, dz / d * v); o.yaw = dampAngle(o.yaw, Math.atan2(dx, dz), 6, dt); }
+    else { o.vel.set(0, 0, 0); o.yaw = dampAngle(o.yaw, o.cer.face ?? 0, 4, dt); }
+    return d;
+  }
+  updateCeremony(dt) {
+    const T = this.phaseT, players = this.all, refs = [this.ref, ...this.ars];
+    let allIn = true;
+    if (this.phase === 'tunnel' || this.phase === 'lineup') {
+      for (const o of [...refs, ...players]) {
+        if (T < o.cer.delay) { o.vel.set(0, 0, 0); allIn = false; continue; }
+        o.cer.face = 0; if (this.cerMove(o, dt) > 0.6) allIn = false;
+      }
+      if (this.phase === 'tunnel' && (allIn || T > 30)) { this.phase = 'lineup'; this.phaseT = 0; this.addFeed('Formados frente a la tribuna principal.'); }
+      else if (this.phase === 'lineup' && T > 6.5) {
+        // Foto oficial: cada equipo en su mitad, fila de atrás de pie y fila de adelante agachada
+        this.phase = 'teamphoto'; this.phaseT = 0; this.photoPosed = false;
+        for (let t = 0; t < 2; t++) {
+          const cx = (t ? 1 : -1) * 20, cz = 9, team = this.players[t];
+          team.forEach((p, i) => { const back = i < 6, k = back ? i : i - 6; p.cer = { delay: 0, face: 0, kneel: !back, target: new THREE.Vector3(cx + (k - (back ? 2.5 : 2)) * 0.8, 0, back ? cz : cz + 0.95) }; });
+        }
+        refs.forEach((o, i) => { o.cer = { delay: 0, face: 0, target: new THREE.Vector3((i - 1) * 1.1, 0, 2) }; });
+        this.addFeed('Foto oficial: los fotógrafos pueden ingresar al campo.'); this.game.events.emit('match:phase', 'teamphoto');
+      }
+    } else if (this.phase === 'teamphoto') {
+      let posed = true;
+      for (const o of [...refs, ...players]) {
+        const d = this.cerMove(o, dt, 2.2);
+        if (o.cer.kneel && d < 0.15 && o.h.state !== 'kneel') o.h.play('kneel');
+        if (d > 0.2) posed = false;
+      }
+      if (posed && !this.photoPosed) { this.photoPosed = true; this.posedAt = T; for (let t = 0; t < 2; t++) this.logEvent('formacion', this.players[t].slice(), new THREE.Vector3((t ? 1 : -1) * 20, 0, 9), { team: t, peak: this.time + 3 }); }
+      if ((this.photoPosed && T - this.posedAt > 11) || T > 28) {
+        // Sorteo: el árbitro llama a los capitanes al círculo central; el resto va a su mitad
+        this.phase = 'toss'; this.phaseT = 0; this.coinState = null;
+        for (const p of players) { p.h.play(p.role === 'GK' ? 'gkReady' : 'loco'); p.cer = { delay: 0, face: 0, target: new THREE.Vector3((p.team ? 1 : -1) * (12 + (p.number % 4) * 3), 0, -8 + (p.number % 6) * 3.2) }; }
+        this.captains[0].cer = { delay: 0, face: Math.PI / 2, target: new THREE.Vector3(-1.05, 0, 0) };
+        this.captains[1].cer = { delay: 0, face: -Math.PI / 2, target: new THREE.Vector3(1.05, 0, 0) };
+        this.ref.cer = { delay: 0, face: Math.PI, target: new THREE.Vector3(0, 0, 0.9) };
+        this.ars[0].cer = { delay: 0, face: Math.PI, target: new THREE.Vector3(-3, 0, 1.6) }; this.ars[1].cer = { delay: 0, face: Math.PI, target: new THREE.Vector3(3, 0, 1.6) };
+        this.addFeed('El árbitro llama a los capitanes para el sorteo.'); this.whistle(1); this.game.events.emit('match:phase', 'toss');
+      }
+    } else if (this.phase === 'toss') {
+      for (const o of [...refs, ...players]) this.cerMove(o, dt, 2.4);
+      const c = this.coin, r = this.ref;
+      if (!this.coinState && T > 5) {
+        this.coinState = { t: 0, from: r.pos.clone().add(new THREE.Vector3(0.25, 1.25, -0.2)), result: Math.random() < 0.5 ? 0 : 1 };
+        r.h.play('point', 1.2, 1); c.visible = true;
+        this.logEvent('sorteo', [this.ref, ...this.captains], new THREE.Vector3(0, 1.5, 0), { team: 0, peak: this.time + 0.45 });
+      }
+      if (this.coinState) {
+        const cs = this.coinState; cs.t += dt;
+        const ft = Math.min(cs.t, 0.95), vy = 4.6, y = cs.from.y + vy * ft - 4.9 * ft * ft;
+        c.position.set(cs.from.x + ft * 0.15, Math.max(0.006, y), cs.from.z + ft * 0.25);
+        if (cs.t < 0.95) { c.rotation.x += dt * 34; }
+        else { c.rotation.x = cs.result ? 0 : Math.PI; c.rotation.z = 0; }
+        if (cs.t > 1.0 && !cs.announced) {
+          cs.announced = true;
+          const winner = cs.result; this.captains[winner].playAnim('celebrate', 1.6);
+          // El ganador elige hacia dónde atacar en el primer tiempo; el otro equipo saca
+          const attackEast = Math.random() < 0.5; const homeEast = winner === 0 ? attackEast : !attackEast;
+          this.sideSign = homeEast ? 1 : -1; this.kickoffTeam = 1 - winner;
+          const side = (team) => (this.dir(team) > 0 ? 'este' : 'oeste');
+          this.addFeed(`Sorteo: gana ${this.teams[winner].short} (${cs.result ? 'escudo' : 'número'}). ${this.teams[0].short} ataca hacia el ${side(0)}; saca ${this.teams[1 - winner].short}.`);
+          this.game.events.emit('match:toss', { winner, homeAttacksEast: this.dir(0) > 0, kickoffTeam: this.kickoffTeam });
+        }
+        if (cs.t > 4.2) { c.visible = false; this.coinState = null; this.phase = 'walkout'; this.phaseT = 0; for (const p of players) p.mode = 'play'; this.addFeed('Los equipos se acomodan para el saque inicial.'); this.game.events.emit('match:phase', 'walkout'); }
+      }
+    }
+    for (const o of refs) { o.pos.addScaledVector(o.vel, dt); o.h.root.position.copy(o.pos); o.h.root.rotation.y = o.yaw; if (o.h.state !== 'point' || o.h.stateT > 1.2) { if (o.h.state !== 'loco') o.h.play('loco'); } o.h.update(dt, o.vel.length()); }
   }
   setRestart(type, team, spot, delay = 2.2) {
     this.ball.owner = null; this.ball.vel.set(0, 0, 0); this.ball.shot = null;
@@ -146,6 +241,7 @@ export class Match {
     switch (this.phase) {
       case 'warmup': this.updateWarmup(dt); break;
       case 'walkout': this.updateWalkout(dt); break;
+      case 'tunnel': case 'lineup': case 'teamphoto': case 'toss': this.updateCeremony(dt); break;
       case 'play': this.updatePlay(dt); this.advanceClock(dt); break;
       case 'restart': this.updateRestart(dt); this.advanceClock(dt * 0.5); break;
       case 'goal': this.updateGoal(dt); break;
@@ -157,7 +253,7 @@ export class Match {
     if (this.phase === 'play' || this.phase === 'goal') this.checkBall();
     for (const p of this.all) {
       if (p.sentOff && p.mode !== 'leaving') continue;
-      if (p.mode === 'fallen') { p.vel.multiplyScalar(0.8); p.fallenT -= dt; if (p.fallenT <= 0) { p.mode = 'play'; p.playAnim('getup', 0.9); } }
+      if (p.mode === 'fallen') { p.vel.multiplyScalar(Math.pow(0.04, dt)); p.fallenT -= dt; if (p.fallenT <= 0) { p.mode = 'play'; p.playAnim('getup', 0.9); } }
       p.integrate(dt);
       p.sync(dt, this.ball.pos);
     }
@@ -442,7 +538,7 @@ export class Match {
     p.vel.set(d * p.maxSpeed * 0.7, 0, lateral * p.maxSpeed * 0.6);
     p.decisionT = 0.6;
     this.logEvent('regate', [p, def], p.pos, { team: p.team, success });
-    if (success) { def.tackleCD = 1.6; def.vel.multiplyScalar(0.2); if (Math.random() < 0.25) { def.mode = 'fallen'; def.fallenT = 0.9; def.playAnim('fallen', 0.9); } }
+    if (success) { def.tackleCD = 1.6; def.vel.multiplyScalar(0.2); if (Math.random() < 0.3) { const dx = def.pos.x - p.pos.x, dz = def.pos.z - p.pos.z, l = Math.hypot(dx, dz) || 1; def.ragdoll(dx / l, dz / l, 1.6); } }
     else this.tryTackle(def, p, true);
   }
   tryTackle(def, owner, forced = false) {
@@ -458,14 +554,14 @@ export class Match {
       const away = new THREE.Vector3(rand(-1, 1), 0, rand(-1, 1)).normalize().multiplyScalar(rand(3, 7));
       b.vel.copy(away); b.pos.y = BALL_R;
       this.logEvent('entrada', [def, owner], def.pos, { team: def.team, slide });
-      if (slide && Math.random() < 0.5) { owner.mode = 'fallen'; owner.fallenT = 1.1; owner.playAnim('fallen', 1.1); }
+      if (slide ? Math.random() < 0.75 : Math.random() < 0.2) { const dx = owner.pos.x - def.pos.x, dz = owner.pos.z - def.pos.z, l = Math.hypot(dx, dz) || 1; owner.ragdoll(dx / l * 0.6 + owner.vel.x * 0.08, dz / l * 0.6 + owner.vel.z * 0.08, 1.8); }
     }
   }
   foul(def, victim) {
     this.whistle(1); this.stats.fouls[def.team]++;
-    victim.mode = 'fallen'; victim.vel.set(0, 0, 0);
+    const fdx = victim.pos.x - def.pos.x, fdz = victim.pos.z - def.pos.z, fl = Math.hypot(fdx, fdz) || 1;
     const sim = Math.random() < 0.25;
-    victim.fallenT = sim ? rand(5, 8) : rand(1.5, 3); victim.playAnim('fallen', victim.fallenT);
+    victim.ragdoll(fdx / fl + victim.vel.x * 0.1, fdz / fl + victim.vel.z * 0.1, sim ? rand(5, 8) : rand(1.6, 3));
     this.logEvent('falta', [def, victim], victim.pos, { team: def.team });
     if (sim) this.logEvent('lesion', [victim], victim.pos, { team: victim.team, peak: this.time + 1.5 });
     this.addFeed(`Falta de ${def.name} (#${def.number}) sobre ${victim.name}.`);
@@ -485,7 +581,7 @@ export class Match {
   }
   card(p, red) {
     this.stats.cards[p.team]++;
-    this.ref.h.play('card', 2.2);
+    this.ref.h.play('card', 2.4); this.ref.card.material.color.set(red || p.yellow ? 0xd71920 : 0xffd400); this.ref.card.visible = true; this.ref.cardT = 2.6;
     if (red || p.yellow) {
       p.sentOff = true; p.mode = 'leaving'; p.vel.set(0, 0, 0); p.playAnim('loco', 0);
       this.logEvent('expulsion', [p, this.ref], p.pos, { team: p.team, peak: this.time + 0.8 });
@@ -661,7 +757,7 @@ export class Match {
         if (d < 3 && p.lock <= 0) { p.playAnim('celebrate', 2); }
       } else {
         const t = this.formationTarget(p, true); p.moveToward(t.x, t.z, 1.6, dt, 3);
-        if (p.role === 'GK' && this.phaseT < 3 && p.lock <= 0) { p.mode = 'fallen'; p.fallenT = 2; p.playAnim('fallen', 2); }
+        if (p.role === 'GK' && this.phaseT < 3 && p.lock <= 0 && p.mode !== 'fallen') { p.ragdoll(Math.random() - 0.5, -Math.sign(p.pos.x) * 0.5, 2.4); }
       }
     }
     this.excite = Math.max(this.excite, 0.9 - this.phaseT * 0.04);
@@ -749,6 +845,8 @@ export class Match {
     if (this.phaseT > 12 && !this.ended) { this.ended = true; this.game.events.emit('match:end', { score: this.score.slice() }); }
   }
   updateOfficials(dt) {
+    if (this.ref.cardT > 0) { this.ref.cardT -= dt; if (this.ref.cardT <= 0) this.ref.card.visible = false; }
+    if (['tunnel', 'lineup', 'teamphoto', 'toss'].includes(this.phase)) return;
     const b = this.ball.pos;
     const r = this.ref;
     const tx = clamp(b.x - Math.sign(b.x || 1) * 10, -HL + 10, HL - 10), tz = clamp(b.z - 12, -HW + 4, HW - 4);

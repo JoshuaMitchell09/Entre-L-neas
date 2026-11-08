@@ -4,7 +4,8 @@ import { numberTexture } from '../gfx/Textures.js';
 import { dampAngle } from '../core/MathUtil.js';
 
 export class Footballer {
-  constructor(scene, team, teamIdx, info, role, slot) {
+  constructor(scene, team, teamIdx, info, role, slot, captain = false) {
+    this.captain = captain;
     this.team = teamIdx; this.teamData = team; this.info = info; this.role = role; this.slot = slot;
     this.number = info.number; this.name = info.surname;
     const gk = role === 'GK';
@@ -13,7 +14,7 @@ export class Footballer {
     this.h = new Humanoid({
       skin: SKIN_TONES[info.skin], hair: HAIR_COLORS[info.hair], shirt, shorts: gk ? team.gk.shorts : team.colors.shorts,
       socks: gk ? team.gk.shorts : team.colors.socks, boots: ['#111111', '#f5f5f5', '#ff5722', '#00b0ff', '#ffeb3b'][info.number % 5],
-      numberTex: tex, height: info.height, gloves: gk ? '#e0e0e0' : null, longSleeves: gk, bald: info.hair === 5 && info.skin > 4,
+      numberTex: tex, height: info.height, armband: captain, gloves: gk ? '#e0e0e0' : null, longSleeves: gk, bald: info.hair === 5 && info.skin > 4,
     });
     this.root = this.h.root; scene.add(this.root);
     this.pos = new THREE.Vector3(); this.vel = new THREE.Vector3(); this.yaw = 0;
@@ -48,6 +49,12 @@ export class Footballer {
   }
   faceToward(x, z, dt, rate = 8) { this.yaw = dampAngle(this.yaw, Math.atan2(x - this.pos.x, z - this.pos.z), rate, dt); }
   playAnim(name, dur, side = 1) { this.h.play(name, dur, side); this.anim = name; this.lock = dur; }
+  // Caída tipo muñeco de trapo en la dirección de un empujón (vector mundo).
+  ragdoll(dirX, dirZ, dur) {
+    const fx = Math.cos(this.yaw) * dirX - Math.sin(this.yaw) * dirZ, fz = Math.sin(this.yaw) * dirX + Math.cos(this.yaw) * dirZ;
+    this.h.fallDir = { x: fx, z: fz }; this.mode = 'fallen'; this.fallenT = dur; this.playAnim('ragdoll', dur);
+    this.vel.set(dirX * 2.2, 0, dirZ * 2.2);
+  }
   integrate(dt) {
     this.pos.x += this.vel.x * dt; this.pos.z += this.vel.z * dt;
     const sp = Math.hypot(this.vel.x, this.vel.z);
@@ -63,7 +70,11 @@ export class Footballer {
     if (ballPos) { let la = Math.atan2(ballPos.x - this.pos.x, ballPos.z - this.pos.z) - this.yaw; while (la > Math.PI) la -= 2 * Math.PI; while (la < -Math.PI) la += 2 * Math.PI; const tgt = Math.max(-1.1, Math.min(1.1, la)) * 0.8; this.h.lookYaw += (tgt - this.h.lookYaw) * Math.min(1, dt * 5); }
     this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
     const sp = Math.hypot(this.vel.x, this.vel.z);
-    if (this.lock > 0) { this.lock -= dt; if (this.lock <= 0 && ['kick', 'header', 'slide', 'throw', 'catch'].includes(this.anim)) { this.h.play(this.role === 'GK' ? 'gkReady' : 'loco'); this.anim = 'loco'; } }
+    if (this.lock > 0) {
+      this.lock -= dt;
+      if (this.lock <= 0 && this.anim === 'dive') { this.playAnim('getup', 0.85); }
+      else if (this.lock <= 0 && ['kick', 'header', 'slide', 'throw', 'catch', 'getup'].includes(this.anim)) { this.h.play(this.role === 'GK' ? 'gkReady' : 'loco'); this.anim = 'loco'; }
+    }
     if (this.lock <= 0 && this.mode === 'play' && this.role === 'GK' && this.anim !== 'gkReady' && this.anim !== 'dive') { this.h.play(sp < 1.5 ? 'gkReady' : 'loco'); this.anim = sp < 1.5 ? 'gkReady' : 'loco'; }
     if (this.role === 'GK' && this.anim === 'gkReady' && sp >= 2.5) { this.h.play('loco'); this.anim = 'loco'; }
     this.h.update(dt, sp);

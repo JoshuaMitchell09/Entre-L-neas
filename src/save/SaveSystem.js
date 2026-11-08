@@ -10,6 +10,7 @@ export class SaveSystem {
       career: g.career.serialize(), inventory: g.inventory.serialize(), missions: g.missions.serialize(), story: g.story.serialize() };
   }
   save(slot = 'auto') {
+    if (this.game.arcade) return false; // el modo arcade no toca la carrera
     try { localStorage.setItem(this.key(slot), JSON.stringify(this.snapshot())); this.game.events.emit('game:saved', slot); return true; }
     catch (e) { console.error(e); return false; }
   }

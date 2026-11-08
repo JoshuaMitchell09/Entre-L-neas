@@ -11,6 +11,7 @@ import { ACTION_LABELS, DEFAULT_BINDINGS } from '../core/Input.js';
 import { formatMoney, formatClock } from '../core/MathUtil.js';
 import { LABELS } from '../photography/PhotoEvaluator.js';
 import { AudioEngine } from '../audio/AudioEngine.js';
+import { TEAMS } from '../football/Teams.js';
 
 const ICONS = { camera: '📷', lens: '🔭', card: '💾', battery: '🔋', accessory: '🧰', backpack: '🎒', credential: '🪪' };
 
@@ -25,7 +26,8 @@ export class Screens {
       h('div', { class: 'tagline' }, '“El partido lo juegan ellos. La historia la capturás vos.”'),
       h('div', { class: 'items' },
         has ? h('button', { class: 'btn', onclick: () => g.continueGame() }, '▶  CONTINUAR') : null,
-        h('button', { class: 'btn', onclick: () => this.newGameDialog() }, '✚  NUEVA PARTIDA'),
+        h('button', { class: 'btn', onclick: () => this.newGameDialog() }, '✚  NUEVA PARTIDA (CARRERA)'),
+        h('button', { class: 'btn', onclick: () => this.arcadeSetup() }, '◎  MODO ARCADE'),
         has ? h('button', { class: 'btn', onclick: () => this.loadMenu() }, '⟳  CARGAR PARTIDA') : null,
         h('button', { class: 'btn', onclick: () => this.settingsStandalone() }, '⚙  AJUSTES'),
         h('button', { class: 'btn', onclick: () => this.credits() }, 'ⓘ  CRÉDITOS')),
@@ -67,6 +69,73 @@ export class Screens {
     const body = h('div'); this.settingsTab(body);
     this.ui.openScreen('settings', h('div', { class: 'screen tabs-screen' }, h('div', { class: 'tabs-wrap panel' }, h('div', { class: 'tabbar', style: { padding: '8px 12px 0' } }, h('div', { class: 'tab on' }, 'AJUSTES'), h('div', { class: 'spacer' }), h('button', { class: 'btn small', onclick: () => this.mainMenu() }, 'Volver')), h('div', { class: 'tabbody' }, body))));
   }
+  // ================= MODO ARCADE =================
+  arcadeSetup() {
+    const g = this.game;
+    let cfg = { stadium: 'cueva', home: 'tibas', away: 'toros', time: 'night', weather: 'clear', halfSeconds: 240, camera: 'jm_pro', lens: 'l_100_400', start: 'warmup', name: g.playerName && g.playerName !== 'Fotógrafo' ? g.playerName : 'Josué Navarro' };
+    try { cfg = { ...cfg, ...JSON.parse(localStorage.getItem('entrelineas.arcade') || '{}') }; } catch (e) { /* sin guardado */ }
+    const body = h('div');
+    const render = () => {
+      clear(body);
+      const field = (label, ctrl) => h('div', { class: 'card', style: { display: 'flex', flexDirection: 'column', gap: '8px' } }, h('div', { class: 'h3', style: { margin: 0 } }, label), ctrl);
+      const sel = (key, opts, after) => h('select', { style: { width: '100%', fontSize: '15px', padding: '8px' }, onchange: (e) => { cfg[key] = isNaN(+e.target.value) || key === 'stadium' ? e.target.value : +e.target.value; after?.(); render(); } },
+        ...opts.map(([v, l]) => h('option', { value: v, selected: String(cfg[key]) === String(v) ? true : null }, l)));
+      const teams = Object.values(TEAMS).map((t) => [t.id, t.name]);
+      const st = STADIUMS[cfg.stadium];
+      const teamCard = (key, label) => field(label, h('div', { style: { display: 'flex', alignItems: 'center', gap: '10px' } }, this.ui.crest(TEAMS[cfg[key]], 44),
+        sel(key, teams.filter(([id]) => id !== cfg[key === 'home' ? 'away' : 'home']))));
+      const lenses = Object.values(LENSES).map((l) => [l.id, l.name]);
+      body.append(
+        h('div', { class: 'grid', style: { gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' } },
+          field('Estadio', h('div', {}, sel('stadium', Object.values(STADIUMS).map((x) => [x.id, x.name]), () => { const local = { cueva: 'tibas', alajuela: 'toros', cartago: 'brumas' }[cfg.stadium]; if (local && local !== cfg.away) cfg.home = local; }),
+            h('div', { class: 'muted', style: { fontSize: '12px', marginTop: '6px' } }, `${st.city} · ${st.capacity.toLocaleString('es-CR')} espectadores. ${st.description}`))),
+          teamCard('home', 'Equipo local'), teamCard('away', 'Equipo visitante'),
+          field('Horario', sel('time', Object.entries(TIME_PRESETS).map(([k, v]) => [k, v.label]))),
+          field('Clima', sel('weather', Object.entries(WEATHER_PRESETS).map(([k, v]) => [k, v.label]))),
+          field('Duración de cada tiempo', sel('halfSeconds', [[150, 'Corto (2,5 min)'], [240, 'Normal (4 min)'], [360, 'Largo (6 min)'], [540, 'Extendido (9 min)']])),
+          field('Cámara', sel('camera', Object.values(CAMERAS).map((c) => [c.id, c.name]))),
+          field('Lente inicial (los demás van en la mochila)', sel('lens', lenses)),
+          field('Empezar en', sel('start', [['warmup', 'Calentamiento y salida de los equipos'], ['kickoff', 'Directo al saque inicial']]))),
+        h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '18px', gap: '10px', flexWrap: 'wrap' } },
+          h('div', { class: 'teams', style: { fontSize: '20px' } }, this.ui.crest(TEAMS[cfg.home], 40), TEAMS[cfg.home].name, h('span', { class: 'muted' }, ' vs '), this.ui.crest(TEAMS[cfg.away], 40), TEAMS[cfg.away].name),
+          h('div', { style: { display: 'flex', gap: '8px' } }, h('button', { class: 'btn', onclick: () => this.mainMenu() }, 'Volver'),
+            h('button', { class: 'btn primary', style: { fontSize: '17px', padding: '12px 26px' }, onclick: () => { try { localStorage.setItem('entrelineas.arcade', JSON.stringify(cfg)); } catch (e) { /* */ } g.startArcade({ ...cfg }); } }, '¡Al estadio! →'))));
+    };
+    render();
+    const el = h('div', { class: 'screen tabs-screen' }, h('div', { class: 'tabs-wrap panel' },
+      h('div', { class: 'tabbar', style: { padding: '8px 12px 0' } }, h('div', { class: 'tab on' }, 'MODO ARCADE'), h('div', { class: 'muted', style: { fontSize: '13px', marginLeft: '10px' } }, 'Elegí estadio, equipos, clima y horario. Todo el equipo fotográfico está disponible.')),
+      h('div', { class: 'tabbody' }, body)));
+    this.ui.openScreen('arcade', el);
+  }
+  arcadeResults(photos) {
+    const g = this.game, cfg = g.arcadeCfg, m = g.match;
+    const scores = photos.map((p) => g.photos.finalScore(p));
+    const top = photos.slice(0, 10), points = top.reduce((a, p) => a + g.photos.finalScore(p), 0);
+    const moments = {}; for (const p of photos) { const k = p.eval.moment.label; if (p.eval.moment.type) moments[k] = (moments[k] || 0) + 1; }
+    const best = photos[0];
+    const rank = points >= 800 ? 'Leyenda del lente' : points >= 650 ? 'Fotógrafo de portada' : points >= 450 ? 'Profesional' : points >= 250 ? 'Promesa' : 'Aficionado';
+    const grid = h('div', { class: 'grid', style: { gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' } }, ...top.map((p) => {
+      const ev = p.editedEval || p.eval;
+      return h('div', { class: 'card', style: { padding: '8px' } }, h('img', { src: p.thumb, style: { width: '100%', borderRadius: '6px' } }),
+        h('div', { style: { display: 'flex', justifyContent: 'space-between', marginTop: '6px' } }, h('span', { style: { fontSize: '12px' } }, `${p.eval.moment.label} · ${p.meta.minute}'`), h('b', { style: { color: scoreColor(ev.score) } }, ev.score)));
+    }));
+    const el = h('div', { class: 'screen' }, h('div', { class: 'panel results' },
+      h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px', flexWrap: 'wrap' } },
+        h('div', {}, h('div', { class: 'muted', style: { letterSpacing: '2px', fontSize: '12px' } }, 'MODO ARCADE · ' + STADIUMS[cfg.stadium].name.toUpperCase()),
+          h('div', { class: 'h1' }, `${TEAMS[cfg.home].short} ${m?.score[0] ?? 0} - ${m?.score[1] ?? 0} ${TEAMS[cfg.away].short}`),
+          h('div', { class: 'muted' }, `${TIME_PRESETS[cfg.time].label} · ${WEATHER_PRESETS[cfg.weather].label} · ${photos.length} fotos tomadas`)),
+        h('div', { style: { textAlign: 'right' } }, h('div', { class: 'bigscore', style: { color: 'var(--accent)' } }, points), h('div', { class: 'muted' }, 'puntos (suma de tus 10 mejores fotos)'), h('div', { style: { fontWeight: 700, fontSize: '18px', marginTop: '4px' } }, rank))),
+      best ? h('div', { class: 'card', style: { margin: '14px 0', display: 'grid', gridTemplateColumns: 'minmax(200px, 320px) 1fr', gap: '14px', borderColor: 'var(--accent)' } }, h('img', { src: best.thumb, style: { width: '100%', borderRadius: '8px' } }),
+        h('div', {}, h('div', { class: 'h3' }, 'Tu mejor foto'), h('div', { style: { fontSize: '18px', fontWeight: 700 } }, `${(best.editedEval || best.eval).label}: ${scores[0]}/100`), h('div', { style: { marginTop: '6px', lineHeight: 1.5 } }, best.eval.comments.join(' ')),
+          h('div', { class: 'muted', style: { marginTop: '8px', fontSize: '13px' } }, Object.entries(moments).map(([k, v]) => `${k}: ${v}`).join(' · ') || 'Sin jugadas clave capturadas'))) : h('div', { class: 'muted', style: { margin: '14px 0' } }, 'No tomaste fotos en este partido.'),
+      h('div', { class: 'h3' }, 'Tus 10 mejores'), grid,
+      h('div', { style: { display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '18px', flexWrap: 'wrap' } },
+        h('button', { class: 'btn', onclick: () => this.pause('galeria') }, 'Ver galería'),
+        h('button', { class: 'btn', onclick: () => { g.arcade = false; g.state = 'menu'; this.arcadeSetup(); } }, 'Configurar otro partido'),
+        h('button', { class: 'btn', onclick: () => g.quitToMenu() }, 'Menú principal'),
+        h('button', { class: 'btn primary', onclick: () => g.startArcade({ ...cfg }) }, 'Jugar otra vez'))));
+    g.state = 'results'; g.lastArcadePhotos = photos; this.ui.openScreen('arcadeResults', el);
+  }
   // ================= PAUSA (pestañas) =================
   pause(tab = 'inventario', opts = {}) {
     const g = this.game;
@@ -82,7 +151,8 @@ export class Screens {
     for (const [k, l] of tabs) { const b = h('button', { class: 'tab', onclick: () => go(k) }, l); b.dataset.t = k; bar.append(b); }
     bar.append(h('div', { class: 'spacer' }),
       h('button', { class: 'btn small', onclick: () => g.resume() }, g.state === 'play' ? '▶ Reanudar (Esc)' : '← Volver'),
-      h('button', { class: 'btn small danger', onclick: async () => { if (await this.ui.confirm(g.inEvent ? 'Si salís ahora abandonarás el evento (−10 de reputación al liquidar). El progreso guardado se conserva.' : 'Volverás al menú principal. Se guardará automáticamente.', 'Salir al menú')) g.quitToMenu(); } }, 'Salir al menú'));
+      g.arcade && g.state === 'play' ? h('button', { class: 'btn small', onclick: () => g.arcadeEnd() }, '⏹ Terminar partido') : null,
+      h('button', { class: 'btn small danger', onclick: async () => { if (await this.ui.confirm(g.arcade ? 'Saldrás del partido arcade.' : g.inEvent ? 'Si salís ahora abandonarás el evento (−10 de reputación al liquidar). El progreso guardado se conserva.' : 'Volverás al menú principal. Se guardará automáticamente.', 'Salir al menú')) g.quitToMenu(); } }, 'Salir al menú'));
     const el = h('div', { class: 'screen tabs-screen' }, h('div', { class: 'tabs-wrap panel' }, bar, body));
     this.ui.openScreen('pause', el); go(tab);
   }

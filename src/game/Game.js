@@ -8,6 +8,8 @@ import { Environment } from '../world/Environment.js';
 import { Stadium, APRON_X, APRON_Z } from '../world/Stadium.js';
 import { City } from '../world/City.js';
 import { STADIUMS } from '../world/StadiumConfigs.js';
+import { TIME_PRESETS } from '../world/Environment.js';
+import { ALL_ITEMS } from '../photography/Equipment.js';
 import { TEAMS } from '../football/Teams.js';
 import { Match } from '../football/Match.js';
 import { PlayerController } from '../player/PlayerController.js';
@@ -131,6 +133,7 @@ export class Game {
   }
   // ---------------- Partidas ----------------
   async newGame(name) {
+    this.arcade = false;
     this.playerName = name; this.profileId = 'p_' + Date.now();
     await this.photos.setProfile(this.profileId);
     this.career.reset(); this.inventory.reset(); this.missions.active = []; this.missions.done = []; this.story.introDone = false;
@@ -138,6 +141,7 @@ export class Game {
     await this.startEvent(EVENTS[0]);
   }
   async applySave(d) {
+    this.arcade = false;
     this.playerName = d.playerName; this.profileId = d.profileId;
     await this.photos.setProfile(this.profileId);
     this.career.reset(); this.career.load(d.career); this.inventory.reset(); this.inventory.load(d.inventory); this.missions.load(d.missions); this.story.load(d.story);
@@ -149,7 +153,53 @@ export class Game {
     this.ui.toast('Partida cargada.', 'good');
     if (this.story.introDone) this.openHub(); else await this.startEvent(EVENTS[0]);
   }
+  // ---------------- Modo arcade ----------------
+  async startArcade(cfg) {
+    this.arcadeCfg = cfg; this.arcade = true;
+    this.ui.closeScreen(true);
+    this.playerName = cfg.name || 'Fotógrafo';
+    await this.photos.setProfile('arcade');
+    // Equipo completo disponible y listo
+    const inv = this.inventory; inv.reset();
+    for (const id of Object.keys(ALL_ITEMS)) if (ALL_ITEMS[id].type !== 'credential') inv.owned[id] = Math.max(1, inv.owned[id] || 0);
+    inv.equipped = { camera: cfg.camera, lens: cfg.lens, card: 'card_256', backpack: 'backpack_pro' };
+    inv.packed = new Set(['battery', 'monopod', 'raincover', ...Object.keys(ALL_ITEMS).filter((id) => ALL_ITEMS[id].type === 'lens' && id !== cfg.lens)]);
+    inv.spares = [1, 1];
+    this.career.reset();
+    const T = TIME_PRESETS[cfg.time];
+    const ev = { id: 'arcade', title: 'Arcade', home: cfg.home, away: cfg.away, stadium: cfg.stadium, time: cfg.time, weather: cfg.weather, minRep: 0, mult: 1, kickoff: T.kickoff,
+      assignment: { title: 'Partido arcade', desc: 'Las mejores fotos del partido.', tags: ['gol', 'celebracion', 'remate', 'atajada', 'disputa', 'entrada', 'regate', 'penal', 'expulsion', 'publico'] }, missions: [] };
+    this.settings.data.halfSeconds = cfg.halfSeconds;
+    await this.ui.fade(true);
+    this.state = 'loading'; await new Promise((r) => setTimeout(r, 30));
+    this.buildLevel(ev);
+    this.career.startEvent(ev); this.inEvent = true;
+    this.story.setup(ev, false);
+    // Directo a la cancha: acreditado, preparado y con la cámara colgada
+    this.missions.active = [];
+    inv.credential = { eventId: 'arcade', event: 'Arcade', home: cfg.home, away: cfg.away, stadium: STADIUMS[cfg.stadium].name, date: '', number: 'ARC-001' };
+    inv.prepared = true; this.story.stage = 'briefed'; this.story.inBowlOnce = true; this.story.briefed = true;
+    this.stadium.gate.open();
+    this.player.place(57.2, -12, -Math.PI / 2); this.player.crouch = false;
+    this.player.setCameraEquipped(true); this.player.avatar.setLensLength(inv.lens.max);
+    this.follow.yaw = -Math.PI / 2; this.follow.pitch = 0.15; this.follow.snap(this.player);
+    this.clock = cfg.start === 'kickoff' ? T.kickoff : T.kickoff - 4;
+    if (cfg.start === 'kickoff') this.story.kickoffNow();
+    this.ui.setObjective(`Arcade: ${this.teamName(cfg.home)} vs ${this.teamName(cfg.away)} · Conseguí las mejores fotos del partido.`);
+    this.state = 'play'; this.input.wantLock = true;
+    this.renderer.compile(this.scene, this.camera);
+    await this.ui.fade(false);
+    this.ui.toast(`ARCADE · ${STADIUMS[cfg.stadium].name} · ${TIME_PRESETS[cfg.time].label}`, 'mission', 3500);
+  }
+  arcadeEnd() {
+    if (!this.arcade || this.state !== 'play') return;
+    if (this.photoMode.active) this.photoMode.exit();
+    this.inEvent = false;
+    const photos = this.photos.session().slice().sort((a, b) => this.photos.finalScore(b) - this.photos.finalScore(a));
+    this.screens.arcadeResults(photos);
+  }
   async quitToMenu() {
+    if (this.arcade) { this.arcade = false; this.inEvent = false; if (this.photoMode.active) this.photoMode.exit(); this.ui.closeScreen(true); this.state = 'menu'; this.screens.mainMenu(); return; }
     if (this.inEvent) { this.career.settle([], true); this.inEvent = false; }
     if (this.profileId) this.saves.save('auto');
     if (this.photoMode.active) this.photoMode.exit();
@@ -183,6 +233,7 @@ export class Game {
     this.ui.closeScreen();
     if (this.state === 'play') { this.input.wantLock = true; this.input.requestLock(); }
     else if (this.state === 'hub') this.screens.hub();
+    else if (this.state === 'results') this.screens.arcadeResults(this.lastArcadePhotos || []);
     else if (this.state === 'menu') this.screens.mainMenu();
   }
   onLockChange() {
@@ -255,7 +306,7 @@ export class Game {
     if (!this.input.pad) this.padAnnounced = false;
     this.ui.padNav(dt);
     const st = this.stadium, m = this.match, p = this.player;
-    if (this.state === 'menu' || this.state === 'hub') {
+    if (this.state === 'menu' || this.state === 'hub' || this.state === 'results') {
       // Cámara orbital cinematográfica sobre el estadio
       this.menuT += dt;
       if (m) { m.update(dt); }

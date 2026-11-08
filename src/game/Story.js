@@ -18,12 +18,41 @@ const ALVARO_TIPS = [
 export class Story {
   constructor(game) { this.game = game; this.introDone = false; this.stage = 'street'; this.npcs = []; this.timers = []; }
   serialize() { return { introDone: this.introDone }; }
+  // Ceremonia y sorteo: indicaciones al fotógrafo y reubicación de los demás fotógrafos.
+  bindMatch() {
+    const g = this.game; if (this.matchBound) return; this.matchBound = true;
+    g.events.on('match:phase', (ph) => {
+      if (!g.inEvent) return;
+      if (ph === 'ceremony') { g.ui.toast('¡Salen los equipos! Buscá un buen ángulo de la salida.', 'mission', 3500); }
+      if (ph === 'teamphoto') { g.ui.toast('📸 Foto oficial: podés entrar al campo frente a cada equipo. Después volvé a la zona de prensa.', 'mission', 5000); g.ui.setObjective('Foto oficial: fotografiá a los dos equipos formados (entrá al campo frente a ellos).'); }
+      if (ph === 'toss') g.ui.setObjective('El árbitro y los capitanes hacen el sorteo en el círculo central.');
+      if (ph === 'second' && this.designated) this.designate(this.designated.id === 'press1' ? -1 : 1, true);
+    });
+    g.events.on('match:toss', ({ homeAttacksEast }) => { if (g.inEvent) this.designate(homeAttacksEast ? 1 : -1, false); });
+  }
+  designate(side, halftime) {
+    const g = this.game, st = g.stadium, z = st.zones.press.find((x) => x.id === 'press' + side);
+    this.designated = z;
+    g.ui.toast(halftime ? `Medio tiempo: los fotógrafos cambian a la ${z.name}.` : `Sorteo hecho: los fotógrafos se ubican en la ${z.name}, detrás de la portería que ataca el local.`, 'mission', 5000);
+    g.ui.setObjective(`Ubicate en la ${z.name} (designada${halftime ? ' para el segundo tiempo' : ' por el sorteo'}).`);
+    // Los demás fotógrafos y Kendall caminan a la zona asignada
+    const L = 52.5, sx = side;
+    const photogs = this.npcs.filter((n) => n.name === 'Fotógrafo' || n === this.alvaro);
+    photogs.forEach((n, i) => {
+      const tz = -24 + (i % 12) * 4.2 + (i === photogs.length - 1 ? 1 : 0), tx = sx * (L + 4.4 + (i % 2) * 0.6);
+      const goal = new THREE.Vector3(tx, 0, Math.abs(tz) < 5 ? tz + Math.sign(tz || 1) * 6 : tz);
+      n.route = [new THREE.Vector3(Math.sign(n.pos.x || 1) * 58, 0, -40.5), new THREE.Vector3(sx * 58, 0, -40.5), goal]; n.ri = 0; n.loop = false; n.speed = 2.2;
+      n.baseYaw = sx > 0 ? -Math.PI / 2 : Math.PI / 2; n.idle = 'kneel'; if (n === this.alvaro) st.spots.alvaro = goal.clone();
+    });
+  }
+  objectivePosDesignated() { const z = this.designated; return z ? new THREE.Vector3((z.x0 + z.x1) / 2, 0, 0) : null; }
   load(d) { this.introDone = !!d?.introDone; }
   clear() { for (const n of this.npcs) n.root.parent?.remove(n.root); for (const m of this.props || []) m.parent?.remove(m); this.props = []; this.npcs = []; this.game.storyNPCs = []; this.game.stewards = []; }
   // Prepara NPC, interacciones y objetivos de un evento.
   setup(ev, intro) {
     const g = this.game, st = g.stadium, city = g.city, P = city.P, I = g.interaction;
-    this.ev = ev; this.intro = intro; this.stage = 'street'; this.gateHinted = false; this.briefed = false; this.kickedOff = false; this.inBowlOnce = false;
+    this.ev = ev; this.intro = intro; this.stage = 'street'; this.gateHinted = false; this.designated = null;
+    this.bindMatch(); this.briefed = false; this.kickedOff = false; this.inBowlOnce = false;
     this.clear();
     const add = (parent, o) => { const n = new NPC(g, parent, o); this.npcs.push(n); return n; };
     // ---------- Personajes principales ----------
@@ -101,6 +130,7 @@ export class Story {
   }
   objectivePos() {
     const g = this.game, st = g.stadium;
+    if (this.designated && ['briefed', 'match'].includes(this.stage)) return this.objectivePosDesignated();
     return { street: this.mariana?.pos, credential: st.spots.guard, inside: g.inventory.prepared ? this.alvaro?.pos : st.spots.prepStand, field: this.alvaro?.pos, post: st.spots.laptop }[this.stage] || null;
   }
   async talkMariana() {
@@ -275,7 +305,7 @@ export class Story {
       g.clock += dt / 4.2;
       if (inBowl && g.input.keyPressed('KeyT')) { this.kickoffNow(); }
       if (g.clock >= this.ev.kickoff) {
-        this.kickedOff = true; g.match.startMatch();
+        this.kickedOff = true; g.match.startMatch(!!(g.arcade && g.arcadeCfg?.start === 'kickoff'));
         if (!this.inBowlOnce) { g.career.eventState.arrivedOnTime = false; g.ui.toast('¡El partido empezó y todavía no estás en la cancha! Llegaste tarde.', 'bad', 5000); }
         else g.ui.toast('¡Los equipos salen a la cancha!', 'info');
         if (this.stage === 'briefed') this.setObjective();
@@ -287,6 +317,7 @@ export class Story {
   }
   onMatchEnd() {
     const g = this.game; if (!this.ev || !g.inEvent) return;
+    if (g.arcade) { g.arcadeEnd(); return; }
     this.stage = 'post'; this.setObjective(); g.missions.add('m_entrega');
     g.ui.toast('¡Final del partido! Entregá tus fotos en la sala de prensa.', 'mission', 5000);
     g.saves.save('auto');
