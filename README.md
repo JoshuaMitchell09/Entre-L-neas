@@ -123,6 +123,17 @@ src/
   game/         Game (orquestador), Story (flujo de eventos), Rules (zonas)
 ```
 
+## Cómo se verificó
+
+Se ejecutó el juego en Chromium (render por software) con scripts de Playwright y se revisaron capturas de cada etapa:
+
+- Menú con el estadio de fondo, calle, puesto de acreditaciones, credencial, control de seguridad (banda del escáner y arco), pasillo, sala de prensa, túnel, zona de Don Álvaro.
+- Visor fotográfico y fotos JPEG reales: profundidad de campo física, sobreexposición a 1/60 (+4 EV) detectada, foco errado detectado ("El foco quedó 24,1 m delante de…"), celebración evaluada 85/100 y marcada como posible portada.
+- Partidos completos simulados a velocidad acelerada (90 minutos): marcadores 1-1, 2-1, 1-3; 12–19 remates, 5–9 atajadas, córners, penales, amarillas y rojas, disputas aéreas.
+- Entrega al editor → resultados (+6 reputación, ₡130 600) → Redacción con calendario y tienda.
+- Estadios Irazú (noche), Irazú con lluvia (césped mojado con reflejos) y La Fortaleza (clásico).
+- Draw calls: ~2 200 → ~500–690 tras convertir personajes a *SkinnedMesh* y fusionar geometría estática.
+
 ## Limitaciones conocidas / siguientes pasos
 
 - Los modelos son *low-poly* procedurales (sin assets externos); la fase de producción visual (modelos esculpidos, captura de movimiento, texturas fotográficas) queda pendiente.
