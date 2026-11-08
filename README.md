@@ -47,6 +47,7 @@ El encargo pedía *preferiblemente* Unity 6. El entorno en el que se desarrolló
 | Inventario · Misiones · Mapa · Galería | `I` · `J` · `M` · `P` | Cruceta ↑ · ↓ · ← · → |
 | Equipo | `Tab` | Create |
 | Pausa | `Esc` | Options |
+| Primera / tercera persona | `V` | R3 (fuera del visor) |
 | Esperar el saque inicial | `T` | — |
 
 **Control de PS5 en Mac:** emparejalo por Bluetooth (Ajustes del Sistema → Bluetooth; en el control mantené **PS + Create** hasta que la luz parpadee) o conectalo por USB-C. Funciona en Chrome y Safari. Con el juego abierto, presioná cualquier botón; aparece el aviso "Control de PlayStation conectado". Los menús se recorren con la cruceta o el stick, con ✕ para aceptar y ○ para volver. El control vibra al disparar y con los goles.
@@ -100,6 +101,14 @@ Galería con filtros (evento, favoritas, seleccionadas, entregadas, tipo de juga
 
 ### Guardado
 Autoguardado en hitos, 3 ranuras manuales, cargar, continuar, nueva partida y eliminar con confirmación. Ajustes persistentes (gráficos, sensibilidad, volumen, teclas, duración del partido).
+
+### Fotorrealismo y primera persona
+- Iluminación por mapa de entorno (IBL) generada desde el cielo físico o desde los focos nocturnos: reflejos coherentes en césped mojado, plásticos y metal.
+- Bóveda de nubes según el clima (despejado, nublado, lluvia) y tonos de atardecer; niebla atmosférica.
+- Paisaje del Valle Central: cordillera brumosa y un valle urbano con casas de techos de zinc y teja, árboles y luces de ciudad de noche.
+- Postprocesado cinematográfico: *bloom* en los focos, oclusión ambiental GTAO (calidad Alta/Ultra), gradación de color con curva suave, viñeta, aberración cromática leve y grano de película.
+- Relieve procedural (mapas de normales) en césped, concreto, asfalto y aceras.
+- **Primera persona** (`V`, R3 o *Ajustes → Vista*): cámara a la altura de los ojos con balanceo natural al caminar y correr, manos sosteniendo tu cámara con el lente equipado, y retícula para interactuar. El visor fotográfico funciona igual desde ambas vistas.
 
 ### Rendimiento
 Personajes como una sola *SkinnedMesh* con huesos (1 draw call cada uno), público instanciado con animación en vertex shader, fusión automática de geometría estática por material y celda, ocultación de la ciudad dentro del estadio y del estadio desde la calle, sombras centradas en la zona de juego, presets de calidad (bajo/medio/alto/ultra) y escala de resolución.
