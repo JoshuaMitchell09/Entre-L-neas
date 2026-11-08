@@ -5,14 +5,14 @@ export const DEFAULT_BINDINGS = {
   interact: 'KeyE', equip: 'KeyG', inventory: 'KeyI', gallery: 'KeyP',
   map: 'KeyM', missions: 'KeyJ', pause: 'Escape',
   paramPrev: 'KeyQ', paramNext: 'KeyE', paramDec: 'KeyZ', paramInc: 'KeyX',
-  autofocus: 'KeyF', driveMode: 'KeyR', gear: 'Tab', swapBattery: 'KeyB', zoomIn: 'Equal', zoomOut: 'Minus',
+  autofocus: 'KeyF', driveMode: 'KeyR', view: 'KeyV', gear: 'Tab', swapBattery: 'KeyB', zoomIn: 'Equal', zoomOut: 'Minus',
 };
 export const ACTION_LABELS = {
   forward: 'Avanzar', back: 'Retroceder', left: 'Izquierda', right: 'Derecha', sprint: 'Correr / Sprint',
   walk: 'Caminar despacio', jump: 'Saltar', crouch: 'Agacharse / arrodillarse', interact: 'Interactuar',
   equip: 'Equipar / guardar cámara', inventory: 'Inventario', gallery: 'Galería', map: 'Mapa', missions: 'Misiones',
   pause: 'Pausa / salir del visor', paramPrev: 'Parámetro anterior (visor)', paramNext: 'Parámetro siguiente (visor)',
-  paramDec: 'Disminuir valor', paramInc: 'Aumentar valor', autofocus: 'Autofoco', driveMode: 'Modo de disparo',
+  paramDec: 'Disminuir valor', paramInc: 'Aumentar valor', autofocus: 'Autofoco', driveMode: 'Modo de disparo', view: 'Primera / tercera persona',
   gear: 'Revisar equipo', swapBattery: 'Cambiar batería', zoomIn: 'Zoom + (teclado)', zoomOut: 'Zoom − (teclado)',
 };
 
@@ -60,7 +60,7 @@ export class Input {
   // Mapeo de mando estándar (Xbox).
   // Mapeo estándar (DualSense / DualShock / Xbox):
   // 0 ✕ · 1 ○ · 2 □ · 3 △ · 4 L1 · 5 R1 · 6 L2 · 7 R2 · 8 Create · 9 Options · 10 L3 · 11 R3 · 12-15 cruceta · 16 PS · 17 panel táctil
-  static PAD_MAP = { interact: 0, crouch: 1, jump: 2, driveMode: 2, equip: 3, paramPrev: 4, paramNext: 5, gear: 8, pause: 9, sprint: 10, autofocus: 11,
+  static PAD_MAP = { interact: 0, crouch: 1, jump: 2, driveMode: 2, equip: 3, paramPrev: 4, paramNext: 5, gear: 8, pause: 9, sprint: 10, autofocus: 11, view: 11,
     inventory: 12, missions: 13, map: 14, gallery: 15, swapBattery: 17 };
   pollPad() {
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];

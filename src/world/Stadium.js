@@ -47,15 +47,16 @@ export class Stadium {
     this.merged = mergeStatic(this.group);
   }
   mats() {
+    const cn = (rep) => { const t = TX.noiseNormalMap('concrete', 256, 10, 2.5, 11).clone(); t.needsUpdate = true; t.repeat.set(rep, rep); return t; };
     this.m = {
-      concrete: new THREE.MeshStandardMaterial({ map: TX.concreteTexture('#a39e93', 3, [8, 8]), roughness: 0.92 }),
-      concreteDark: new THREE.MeshStandardMaterial({ map: TX.concreteTexture('#77736b', 5, [6, 6]), roughness: 0.95 }),
+      concrete: new THREE.MeshStandardMaterial({ map: TX.concreteTexture('#a39e93', 3, [8, 8]), normalMap: cn(8), normalScale: new THREE.Vector2(0.6, 0.6), roughness: 0.92 }),
+      concreteDark: new THREE.MeshStandardMaterial({ map: TX.concreteTexture('#77736b', 5, [6, 6]), normalMap: cn(6), normalScale: new THREE.Vector2(0.6, 0.6), roughness: 0.95 }),
       facade: new THREE.MeshStandardMaterial({ map: TX.paintedWallTexture(this.cfg.facade, 12, { band: this.cfg.facadeBand }), roughness: 0.9 }),
       steel: stdMat('#9aa1a8', 0.4, 0.8), darkSteel: stdMat('#2c3036', 0.45, 0.7), white: stdMat('#f4f4f4', 0.5),
       tile: new THREE.MeshStandardMaterial({ map: TX.tileTexture('#cfd2d4', '#bfc3c6', [10, 10]), roughness: 0.5 }),
       wallInt: new THREE.MeshStandardMaterial({ map: TX.paintedWallTexture('#e6e2d8', 31, { band: this.cfg.facadeBand }), roughness: 0.85 }),
       glass: new THREE.MeshStandardMaterial({ color: 0x9fc4d8, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.35 }),
-      track: new THREE.MeshStandardMaterial({ color: 0x2f5d32, roughness: 0.95 }),
+      track: new THREE.MeshStandardMaterial({ color: 0x2f5d32, roughness: 0.95, normalMap: (() => { const t = TX.noiseNormalMap('grass', 256, 24, 4, 5, true).clone(); t.needsUpdate = true; t.repeat.set(60, 45); return t; })(), normalScale: new THREE.Vector2(0.5, 0.5) }),
     };
   }
   box(w, h, d, mat, x, y, z, { cast = true, receive = true, parent = this.group, ry = 0 } = {}) {
@@ -70,7 +71,8 @@ export class Stadium {
   buildPitch() {
     const { L, W, apron } = PITCH;
     const wet = this.game.env.wet;
-    this.pitchMat = new THREE.MeshStandardMaterial({ map: TX.pitchTexture(L, W, apron, wet), roughness: wet ? 0.45 : 0.95, metalness: 0 });
+    const gn = TX.noiseNormalMap('grass', 256, 24, 4, 5, true).clone(); gn.needsUpdate = true; gn.repeat.set((L + 2 * apron) / 1.6, (W + 2 * apron) / 1.6);
+    this.pitchMat = new THREE.MeshStandardMaterial({ map: TX.pitchTexture(L, W, apron, wet), normalMap: gn, normalScale: new THREE.Vector2(0.55, 0.55), roughness: wet ? 0.42 : 0.93, metalness: 0 });
     const p = new THREE.Mesh(new THREE.PlaneGeometry(L + 2 * apron, W + 2 * apron), this.pitchMat);
     p.rotation.x = -Math.PI / 2; p.receiveShadow = true; this.group.add(p); this.pitch = p;
     // Banderines de esquina

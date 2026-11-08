@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { kelvinToRGB } from '../core/MathUtil.js';
+import { cloudTexture } from '../gfx/Textures.js';
 
 /*
  * Ambiente: hora del día, clima, iluminación y lluvia.
@@ -31,6 +32,31 @@ export class Environment {
     this.flood = []; this.floodGroup = new THREE.Group(); this.group.add(this.floodGroup);
     this.rain = null; this.time = 'day'; this.weather = 'clear';
     this.shadowCenter = new THREE.Vector3();
+    this.pmrem = new THREE.PMREMGenerator(game.renderer); this.envRT = null;
+    this.clouds = new THREE.Mesh(new THREE.SphereGeometry(1900, 48, 16, 0, Math.PI * 2, 0, Math.PI * 0.5),
+      new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, fog: false, side: THREE.BackSide }));
+    this.clouds.renderOrder = -1; this.group.add(this.clouds);
+  }
+  // Mapa de entorno (IBL): reflejos y luz ambiental físicamente coherentes con el cielo.
+  buildEnvMap(time, weather, lights) {
+    const es = new THREE.Scene();
+    if (time !== 'night') {
+      const sky = new Sky(); sky.scale.setScalar(1000);
+      for (const k of ['turbidity', 'rayleigh', 'mieCoefficient', 'mieDirectionalG']) sky.material.uniforms[k].value = this.sky.material.uniforms[k].value;
+      sky.material.uniforms.sunPosition.value.copy(this.sunDir); es.add(sky);
+      const ground = new THREE.Mesh(new THREE.CircleGeometry(900, 24), new THREE.MeshBasicMaterial({ color: weather === 'rain' ? 0x1e2a1e : 0x2f4a2a }));
+      ground.rotation.x = -Math.PI / 2; ground.position.y = -5; es.add(ground);
+    } else {
+      es.background = new THREE.Color(0x070a12);
+      const lm = new THREE.MeshBasicMaterial({ color: new THREE.Color(9, 8.6, 8) });
+      for (const p of lights.slice(0, 16)) { const b = new THREE.Mesh(new THREE.BoxGeometry(14, 4, 14), lm); b.position.copy(p).multiplyScalar(0.8); es.add(b); }
+      const ground = new THREE.Mesh(new THREE.CircleGeometry(400, 24), new THREE.MeshBasicMaterial({ color: 0x1d3a1d })); ground.rotation.x = -Math.PI / 2; ground.position.y = -2; es.add(ground);
+    }
+    this.envRT?.dispose();
+    this.envRT = this.pmrem.fromScene(es, 0.03);
+    this.scene.environment = this.envRT.texture;
+    this.scene.environmentIntensity = time === 'night' ? 0.35 : time === 'sunset' ? 0.5 : 0.6;
+    es.traverse((o) => { o.geometry?.dispose(); });
   }
   configure(time, weather, stadiumLights = []) {
     this.time = time; this.weather = weather;
@@ -91,6 +117,15 @@ export class Environment {
     if (this.rain) { this.group.remove(this.rain); this.rain.geometry.dispose(); this.rain = null; }
     if (W.rain > 0) this.rain = this.makeRain();
     this.wet = W.rain > 0;
+    // Nubes según el clima y la hora
+    const cov = weather === 'rain' ? 0.95 : weather === 'cloudy' ? 0.8 : 0.42;
+    const cm = this.clouds.material; cm.map = cloudTexture(cov, time === 'sunset' ? 9 : 3); cm.needsUpdate = true;
+    cm.color.set(time === 'night' ? 0x1a1f2a : time === 'sunset' ? 0xffb39a : weather === 'clear' ? 0xffffff : 0xb9c0c8);
+    cm.opacity = time === 'night' ? 0.55 : 1;
+    // Niebla atmosférica: deja ver la cordillera lejana con perspectiva aérea
+    if (weather !== 'rain') { this.scene.fog.near = 280; this.scene.fog.far = time === 'night' ? 1700 : 2600; }
+    this.hemi.intensity *= 0.6;
+    this.buildEnvMap(time, weather, stadiumLights);
     this.game.renderer.toneMappingExposure = this.exposure;
   }
   makeRain() {
@@ -121,6 +156,7 @@ export class Environment {
     const c = this.shadowCenter.set(Math.round(cameraPos.x / 8) * 8, 0, Math.round(cameraPos.z / 8) * 8);
     this.sun.target.position.copy(c);
     this.sun.position.copy(c).addScaledVector(this.sunDir.y > 0.05 ? this.sunDir : new THREE.Vector3(0.3, 1, 0.4).normalize(), 200);
+    this.clouds.rotation.y = time * 0.002;
     if (this.rain) { this.rain.material.uniforms.uTime.value = time; this.rain.material.uniforms.uCenter.value.copy(cameraPos); }
   }
 }

@@ -36,9 +36,11 @@ export class City {
   }
   buildStreet() {
     const P = this.P;
-    const walk = new THREE.MeshStandardMaterial({ map: TX.sidewalkTexture([75, 2]), roughness: 0.9 });
+    const sn = TX.noiseNormalMap('concrete', 256, 10, 2.5, 11).clone(); sn.needsUpdate = true; sn.repeat.set(80, 2);
+    const walk = new THREE.MeshStandardMaterial({ map: TX.sidewalkTexture([75, 2]), normalMap: sn, normalScale: new THREE.Vector2(0.6, 0.6), roughness: 0.9 });
     const walk2 = new THREE.MeshStandardMaterial({ map: TX.sidewalkTexture([75, 2]), roughness: 0.9 });
-    const road = new THREE.MeshStandardMaterial({ map: TX.asphaltTexture([30, 3]), roughness: this.game.env.wet ? 0.35 : 0.85 });
+    const an = TX.noiseNormalMap('asphalt', 256, 32, 3, 21, true).clone(); an.needsUpdate = true; an.repeat.set(60, 3);
+    const road = new THREE.MeshStandardMaterial({ map: TX.asphaltTexture([30, 3]), normalMap: an, normalScale: new THREE.Vector2(0.7, 0.7), roughness: this.game.env.wet ? 0.28 : 0.85 });
     this.plane(340, 12, road, 0, 0.0, P + 10);
     // Aceras con cordón (bordillo) de 15 cm
     const sw = this.box(340, 0.15, 4, walk, 0, 0.075, P + 2, { cast: false }); sw.material = walk;

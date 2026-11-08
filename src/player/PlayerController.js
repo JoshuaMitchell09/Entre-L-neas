@@ -44,7 +44,7 @@ export class PlayerController {
     const accel = this.grounded ? 10 : 2;
     this.vel.x = damp(this.vel.x, target.x, accel, dt); this.vel.z = damp(this.vel.z, target.z, accel, dt);
     // Orientación: hacia el movimiento, o hacia la cámara en el visor
-    if (this.inViewfinder) this.yaw = camYaw;
+    if (this.inViewfinder || this.firstPerson) this.yaw = camYaw;
     else if (wl > 0.05) this.yaw = dampAngle(this.yaw, Math.atan2(wish.x, wish.z), 10, dt);
     // Salto
     if (allowMove && this.grounded && input.wasPressed('jump') && !this.inViewfinder && !this.crouch) { this.vy = 4.6; this.grounded = false; }
@@ -70,5 +70,6 @@ export class PlayerController {
     if (av.state !== st) av.play(st, 1);
     av.update(dt, this.crouch ? 0 : this.speed);
   }
+  get firstPerson() { return this.game.settings.data.view === 'primera'; }
   eyeHeight() { return this.crouch ? 1.08 : 1.64; }
 }

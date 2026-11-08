@@ -25,6 +25,9 @@ import { Screens } from '../ui/Screens.js';
 import { Gallery } from '../ui/Gallery.js';
 import { h } from '../ui/dom.js';
 import { Rules } from './Rules.js';
+import { PostFX } from '../gfx/PostFX.js';
+import { Scenery } from '../world/Scenery.js';
+import { ViewModel } from '../player/ViewModel.js';
 import { Story } from './Story.js';
 import { clamp } from '../core/MathUtil.js';
 
@@ -47,6 +50,7 @@ export class Game {
     this.missions = new MissionSystem(this); this.saves = new SaveSystem(this); this.story = new Story(this); this.rules = new Rules(this);
     this.interaction = new InteractionSystem(this); this.photoMode = new PhotoMode(this);
     this.player = new PlayerController(this); this.follow = new FollowCamera(this, this.camera);
+    this.post = new PostFX(this); this.scene.add(this.camera); this.viewModel = new ViewModel(this);
     this.state = 'boot'; this.clock = 15 * 60; this.time = 0; this.fps = 60; this.inEvent = false; this.cinematic = false;
     this.playerName = 'Fotógrafo'; this.profileId = null; this.menuT = 0;
     this.resize(); window.addEventListener('resize', () => this.resize());
@@ -62,8 +66,9 @@ export class Game {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2) * q.pixelRatio * s.resolutionScale);
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
     this.camera.aspect = window.innerWidth / window.innerHeight; this.camera.updateProjectionMatrix();
+    this.post?.resize(window.innerWidth, window.innerHeight, this.renderer.getPixelRatio());
   }
-  applyQuality() { this.resize(); this.renderer.shadowMap.enabled = this.settings.q.shadows > 0; this.env.sun.castShadow = this.settings.q.shadows > 0; }
+  applyQuality() { this.post.setup(); this.resize(); this.renderer.shadowMap.enabled = this.settings.q.shadows > 0; this.env.sun.castShadow = this.settings.q.shadows > 0; }
   bindEvents() {
     const E = this.events;
     E.on('match:goal', ({ team }) => {
@@ -81,6 +86,7 @@ export class Game {
   disposeLevel() {
     this.match?.dispose(); this.match = null;
     for (const o of [this.stadium?.group, this.city?.group]) if (o) { this.scene.remove(o); o.traverse((c) => { if (c.isMesh || c.isLine || c.isPoints) { c.geometry?.dispose(); } }); }
+    this.scenery?.dispose(); this.scenery = null;
     this.stadium = null; this.city = null; this.collision = new CollisionWorld(); this.interaction.clear(); this.rules.reset();
     this.story.clear();
   }
@@ -93,6 +99,8 @@ export class Game {
     this.env.configure(ev.time, ev.weather, this.stadium.lightPositions);
     onProgress(0.6, 'Construyendo la ciudad…');
     this.city = new City(this, this.stadium.gateZ);
+    this.scenery = new Scenery(this, new THREE.Vector3(0, 0, 0), 175);
+    if (!this.post.composer && this.settings.q.bloom) this.post.setup(); else this.post.configure();
     onProgress(0.8, 'Calentando a los equipos…');
     this.match = new Match(this, this.stadium, home, away, { halfSeconds: +this.settings.data.halfSeconds || 240 });
     this.collision.rebuild();
@@ -198,6 +206,7 @@ export class Game {
       if (inp.wasPressed('missions')) return this.screens.pause('misiones');
       if (inp.wasPressed('gear')) return this.screens.pause('inventario');
       if (inp.wasPressed('interact')) this.interaction.interact();
+      if (inp.wasPressed('view')) this.toggleView();
     }
     if (inp.wasPressed('equip')) {
       if (pm.active) pm.exit();
@@ -212,6 +221,13 @@ export class Game {
       if (this.inventory.swapBattery()) { this.ui.toast(`Batería cambiada (${this.inventory.batteryPct}%).`, 'good'); this.audio.ui('click'); }
       else this.ui.toast('No hay baterías de repuesto con carga en la mochila.', 'warn');
     }
+  }
+  toggleView() {
+    const s = this.settings.data, fp = s.view !== 'primera';
+    s.view = fp ? 'primera' : 'tercera'; this.settings.save();
+    if (fp) this.follow.fpPitch = 0; else this.follow.snap(this.player);
+    this.camera.fov = s.fov; this.camera.updateProjectionMatrix();
+    this.ui.toast(fp ? 'Vista en primera persona' : 'Vista en tercera persona', 'info', 1400);
   }
   // ---------------- Bucle ----------------
   start() {
@@ -253,7 +269,7 @@ export class Game {
     if (!this.photoMode.active) {
       this.follow.update(dt, this.input, p, freeMove && (this.input.locked || this.input.pad));
       p.update(dt, this.input, this.follow.yaw, freeMove);
-      p.root.visible = true;
+      p.root.visible = !this.follow.firstPerson;
     } else {
       p.update(dt, this.input, this.photoMode.yaw, freeMove);
       this.photoMode.update(dt);
@@ -293,12 +309,13 @@ export class Game {
     this.audio.updateListener(this.camera);
     this.audio.update(dt, { inStadiumBowl: st && Math.abs(p.pos.x) < APRON_X + 1 && Math.abs(p.pos.z) < APRON_Z + 0.5, interior, distToStadium: st ? Math.max(0, p.pos.z - st.gateZ) : 0,
       excite: m ? m.excite : 0.1, weather: this.env.weather, time: this.env.time, crowd: true, city: true, clasico: !!(this.stadium?.cfg.clasico || this.career.event?.clasico) });
+    this.viewModel.update(dt);
     this.ui.update(dt);
   }
   render() {
     if (this.state === 'boot' || this.state === 'loading') { this.renderer.render(this.scene, this.camera); return; }
     if (this.photoMode.active && !this.ui.screen) this.photoMode.pipeline.renderLive(this.scene, this.camera, this.photoMode.opticsState());
-    else this.renderer.render(this.scene, this.camera);
+    else this.post.draw(this.camera);
     if (this.state !== 'play') this.ui.update(0);
   }
 }

@@ -293,3 +293,58 @@ export function glowSprite(color = '#ffffff') {
   });
 }
 export { makeCanvas, toTex };
+
+// ---------- Fotorrealismo: ruido fractal, nubes y mapas de normales ----------
+function valueNoise2D(seed) {
+  const rnd = seededRandom(seed), N = 256, perm = new Uint8Array(512), val = new Float32Array(N);
+  for (let i = 0; i < N; i++) { perm[i] = i; val[i] = rnd(); }
+  for (let i = N - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [perm[i], perm[j]] = [perm[j], perm[i]]; }
+  for (let i = 0; i < 256; i++) perm[256 + i] = perm[i];
+  const sm = (t) => t * t * (3 - 2 * t);
+  return (x, y, wrap = 0) => {
+    let xi = Math.floor(x), yi = Math.floor(y); const xf = x - xi, yf = y - yi;
+    const w = (v) => (wrap ? ((v % wrap) + wrap) % wrap : v) & 255;
+    const h = (a, b) => val[perm[w(a) + perm[w(b)]] & 255];
+    const u = sm(xf), v = sm(yf);
+    return (h(xi, yi) * (1 - u) + h(xi + 1, yi) * u) * (1 - v) + (h(xi, yi + 1) * (1 - u) + h(xi + 1, yi + 1) * u) * v;
+  };
+}
+// Bóveda de nubes (equirectangular, solo hemisferio superior, repetible en X).
+export function cloudTexture(coverage = 0.5, seed = 3) {
+  return cached('clouds' + coverage + seed, () => {
+    const W = 1024, H = 256, c = makeCanvas(W, H), ctx = c.getContext('2d'), img = ctx.createImageData(W, H), d = img.data;
+    const n = valueNoise2D(seed);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      let f = 0, amp = 0.5, fr = 1 / 64, period = W / 64;
+      for (let o = 0; o < 6; o++) { f += amp * n(x * fr, y * fr * 2.2, period); amp *= 0.5; fr *= 2; period *= 2; }
+      const horizon = y / H; // 0 = cenit, 1 = horizonte
+      let a = Math.max(0, (f - (1 - coverage) * 0.75) * 2.6);
+      a = Math.min(1, a) * (0.35 + 0.65 * Math.min(1, horizon * 1.6));
+      const shade = 0.72 + 0.28 * (1 - Math.min(1, (f - 0.4) * 1.8));
+      const i = (y * W + x) * 4;
+      d[i] = d[i + 1] = d[i + 2] = 255 * shade; d[i + 3] = 255 * a;
+    }
+    ctx.putImageData(img, 0, 0);
+    const t = toTex(c, { wrap: true }); t.wrapT = THREE.ClampToEdgeWrapping; return t;
+  });
+}
+// Mapa de normales a partir de un campo de altura de ruido (relieve fino repetible).
+export function noiseNormalMap(key, size = 256, scale = 8, strength = 2, seed = 7, blades = false) {
+  return cached('nrm' + key, () => {
+    const c = makeCanvas(size, size), ctx = c.getContext('2d'), img = ctx.createImageData(size, size), d = img.data;
+    const n = valueNoise2D(seed), hgt = new Float32Array(size * size), rnd = seededRandom(seed + 1);
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      let f = 0, amp = 0.5, fr = scale / size, per = scale;
+      for (let o = 0; o < 4; o++) { f += amp * n(x * fr, y * fr, per); amp *= 0.5; fr *= 2; per *= 2; }
+      hgt[y * size + x] = f + (blades ? rnd() * 0.35 : 0);
+    }
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      const hL = hgt[y * size + ((x - 1 + size) % size)], hR = hgt[y * size + ((x + 1) % size)];
+      const hU = hgt[((y - 1 + size) % size) * size + x], hD = hgt[((y + 1) % size) * size + x];
+      let nx = (hL - hR) * strength, ny = (hU - hD) * strength, nz = 1; const l = Math.hypot(nx, ny, nz); nx /= l; ny /= l; nz /= l;
+      const i = (y * size + x) * 4; d[i] = (nx * 0.5 + 0.5) * 255; d[i + 1] = (ny * 0.5 + 0.5) * 255; d[i + 2] = (nz * 0.5 + 0.5) * 255; d[i + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    return toTex(c, { srgb: false });
+  });
+}

@@ -30,7 +30,7 @@ export class Crowd {
     this.aColor = new Float32Array(maxCount * 3);
     this.aSkin = new Float32Array(maxCount * 3);
     this.uniforms = { uTime: { value: 0 }, uExcite: { value: 0.1 }, uStand: { value: 0.15 }, uWave: { value: -100 }, uFocus: { value: new THREE.Vector3(0, 0, 0) }, uFocusAmt: { value: 0 } };
-    const mat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85 });
     mat.onBeforeCompile = (sh) => {
       Object.assign(sh.uniforms, this.uniforms);
       sh.vertexShader = sh.vertexShader

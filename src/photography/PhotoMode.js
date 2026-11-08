@@ -29,7 +29,7 @@ export class PhotoMode {
     if (!this.cam || !this.lens) { g.ui.toast('No tenés cámara o lente equipados.', 'warn'); return false; }
     if (g.inventory.batteryCharge <= 0) { g.ui.toast('Batería agotada. Cambiala con B si tenés repuesto.', 'warn'); return false; }
     this.active = true; p.inViewfinder = true; p.root.visible = false;
-    this.yaw = g.follow.yaw; this.pitch = -g.follow.pitch * 0.4; this.prevYaw = this.yaw; this.prevPitch = this.pitch;
+    this.yaw = g.follow.yaw; this.pitch = g.follow.firstPerson ? g.follow.fpPitch : -g.follow.pitch * 0.4; this.prevYaw = this.yaw; this.prevPitch = this.pitch;
     this.clampFocal(); this.clampAperture();
     g.audio?.ui('viewfinder');
     g.events.emit('photo:enter');
@@ -37,7 +37,7 @@ export class PhotoMode {
   }
   exit() {
     const g = this.game; this.active = false; g.player.inViewfinder = false; g.player.root.visible = true;
-    g.follow.yaw = this.yaw; g.camera.fov = g.settings.data.fov; g.camera.updateProjectionMatrix();
+    g.follow.yaw = this.yaw; g.follow.fpPitch = this.pitch; g.camera.fov = g.settings.data.fov; g.camera.updateProjectionMatrix();
     g.events.emit('photo:exit');
   }
   clampFocal() { const L = this.lens; this.s.focal = clamp(this.s.focal, L.min, L.max); }

@@ -9,7 +9,7 @@ import { crestCanvas } from '../gfx/Textures.js';
  */
 // Íconos del control (DualSense) por acción
 const PAD_GLYPHS = { interact: '✕', crouch: '○', jump: '□', driveMode: '□', equip: '△', paramPrev: 'L1', paramNext: 'R1', paramDec: '←', paramInc: '→',
-  autofocus: 'R3', sprint: 'L3', gear: 'Create', pause: 'Options', swapBattery: 'Panel', inventory: '↑', missions: '↓', map: '←', gallery: '→', zoomIn: '↑', zoomOut: '↓', walk: '—', forward: 'L↑', back: 'L↓', left: 'L←', right: 'L→' };
+  autofocus: 'R3', view: 'R3', sprint: 'L3', gear: 'Create', pause: 'Options', swapBattery: 'Panel', inventory: '↑', missions: '↓', map: '←', gallery: '→', zoomIn: '↑', zoomOut: '↓', walk: '—', forward: 'L↑', back: 'L↓', left: 'L←', right: 'L→' };
 export class UI {
   constructor(game) {
     this.game = game; this.root = document.getElementById('ui-root'); this.screen = null; this.screenName = null;
@@ -81,6 +81,7 @@ export class UI {
     const showHud = !this.screen && g.state === 'play' && !g.photoMode.active && !this.dialogueActive && !g.cinematic;
     this.hud.classList.toggle('hidden', !showHud);
     this.vf.root.classList.toggle('show', g.photoMode.active && !this.screen);
+    this.crossEl.style.display = showHud && g.follow.firstPerson ? 'block' : 'none';
     if (g.settings.data.showFps) this.fpsEl.textContent = `${g.fps.toFixed(0)} FPS · ${g.renderer.info.render.calls} dc`; else this.fpsEl.textContent = '';
     if (g.state !== 'play') return;
     // Reloj / marcador
