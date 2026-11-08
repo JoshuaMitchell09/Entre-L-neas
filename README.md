@@ -77,6 +77,30 @@ Todos los controles son reasignables en **Pausa → Ajustes → Teclas**.
 - **Puerta de seguridad nueva:** puerta automática de vidrio transparente, corrediza, con marco de aluminio y sensor. Se abre sola al acercarte una vez que pasaste el control.
   - Antes había una pared detrás de la puerta y el jugador la atravesaba. Ahora la puerta da directo al pasillo.
 
+- **Modo dron / tráiler** (`K` o *Pausa → Modo dron*): para grabar videos del juego.
+  - **7 tomas:** dron libre, órbita del estadio, sobrevuelo cinematográfico, cámara de transmisión de TV, riel de banda, seguir el balón y seguir a un jugador.
+  - **Efectos:** cámara lenta (×0.5, ×0.25, ×0.1), franjas de cine 2.39:1 y zoom.
+  - **Grabación:** `R` graba la imagen con el sonido del juego y descarga un **MP4** (o WebM, según el navegador) en Descargas. La interfaz no sale en el video.
+  - **Control PS5:** ✕ siguiente toma, □ grabar, △ cámara lenta, Create franjas, Options ocultar panel, L1/R1 bajar/subir, L2/R2 zoom, ○ salir.
+- **Pulpería, soda y bar con interior.** Se entra caminando, sin pantalla de carga.
+  - Adentro hay mostrador, estantes llenos, refri con bebidas, dependiente, clientes y una tele con el partido en el bar.
+  - Lo que comprés tiene efecto real:
+    - Chicles: el pulso tiembla menos.
+    - Gaseosa o comida: energía para correr.
+    - Café o energética: autofoco más rápido.
+    - Cargador: batería llena.
+    - Cerveza: el pulso tiembla más.
+- **Teléfono con conversaciones largas:** temas de varias vueltas con cada contacto, respuestas según el marcador, la hora o tus fotos, y contactos que te escriben solos. La navegación con el control PS5 ya no se devuelve sola.
+- **Más cámaras:** JM Classic D1 (usada), JM M50 Mirrorless (silenciosa), JM Studio 60 y JM R1 Sin Espejo (30 fps). **Más lentes:** 16-35 mm f/2.8, 50 mm f/1.4 y 150-600 mm. Cada cuerpo tiene su sonido de obturador y su aspecto.
+- **Más realismo:**
+  - Caras con ojos, cejas, boca y barba, y peinados variados (corto, rapado, rizado, largo).
+  - Cuello de camiseta.
+  - Vallas LED que rotan publicidad.
+- **Optimización:**
+  - **Resolución dinámica:** si bajan los FPS, baja la resolución interna y la recupera cuando sobra rendimiento. Se activa o desactiva en *Ajustes*.
+  - Cuando el equipo va justo, las sombras se recalculan cada dos cuadros.
+  - Los interiores comparten una sola luz.
+
 ## Qué está implementado (y funciona)
 
 ### Introducción jugable (escenas 1–6)
