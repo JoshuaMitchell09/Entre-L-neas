@@ -2,9 +2,9 @@
 
 > *“El partido lo juegan ellos. La historia la capturás vos.”*
 
-Simulador 3D de fotografía deportiva ambientado en el fútbol costarricense. Sos un fotógrafo amateur que consigue su primera acreditación para **Pura Vida Deportes** y construye su carrera: llegar al estadio, pasar seguridad, posicionarse, anticipar jugadas, disparar, editar, entregar al editor y ganar reputación.
+Simulador 3D de fotografía deportiva ambientado en el fútbol costarricense. Sos un fotógrafo amateur que consigue su primera acreditación para **Ascenso Total** y construye su carrera: llegar al estadio, pasar seguridad, posicionarse, anticipar jugadas, disparar, editar, entregar al editor y ganar reputación.
 
-Todo el contenido (estadios, clubes, jugadores, marcas, texturas y sonidos) es **ficticio y procedural**: no hay assets externos.
+Todo el contenido se genera de forma procedural (no hay assets externos). La sede principal, **Estadio La Cueva** en Tibás, reproduce la arquitectura del estadio tibaseño: tribunas laterales de dos niveles con techos de cerchas blancas, cabeceras abiertas, butacas moradas con pasillos amarillos y fachada granate con letras gigantes. Clubes, jugadores y patrocinadores son ficticios. Tu medio es **Ascenso Total**.
 
 ---
 
@@ -29,22 +29,27 @@ El encargo pedía *preferiblemente* Unity 6. El entorno en el que se desarrolló
 
 ## Controles
 
-| Acción | Teclado / ratón | Mando |
+| Acción | Teclado / ratón | Control PS5 (DualSense) |
 |---|---|---|
-| Moverse / correr / caminar | `WASD` / `Shift` / `Alt` | Stick izq. / L3 |
-| Saltar / arrodillarse (ángulo bajo) | `Espacio` / `C` | A / B |
-| Interactuar | `E` | A |
-| Equipar / guardar cámara | `G` | Y |
-| Levantar / bajar visor | Clic derecho | LT |
-| Disparar | Clic izquierdo (mantener en ráfaga) | RT |
-| Zoom | Rueda del ratón / `+` `−` | Cruceta ↑↓ |
-| Elegir parámetro / cambiar valor | `Q` `E` / `Z` `X` | LB RB / cruceta ←→ |
+| Moverse / mirar | `WASD` / ratón | Stick izquierdo / stick derecho |
+| Correr | `Shift` | L3 (presionar stick izq.) |
+| Interactuar / aceptar | `E` | ✕ |
+| Arrodillarse (ángulo bajo) / volver en menús | `C` | ○ |
+| Saltar | `Espacio` | □ |
+| Equipar / guardar cámara | `G` | △ |
+| Levantar / bajar visor | Clic derecho | L2 |
+| Disparar (mantener en ráfaga) | Clic izquierdo | R2 |
+| Zoom | Rueda / `+` `−` | Cruceta ↑ ↓ (mantener) |
+| Elegir parámetro / cambiar valor | `Q` `E` / `Z` `X` | L1 R1 / cruceta ← → |
 | Autofoco | `F` | R3 |
-| Individual / ráfaga | `R` | X |
-| Cambiar batería | `B` | X |
-| Inventario · Galería · Mapa · Misiones | `I` · `P` · `M` · `J` (y `Tab`) | Cruceta |
-| Esperar el saque inicial (en la cancha) | `T` | — |
-| Pausa / salir del visor | `Esc` | Start |
+| Individual / ráfaga | `R` | □ (en el visor) |
+| Cambiar batería | `B` | Panel táctil |
+| Inventario · Misiones · Mapa · Galería | `I` · `J` · `M` · `P` | Cruceta ↑ · ↓ · ← · → |
+| Equipo | `Tab` | Create |
+| Pausa | `Esc` | Options |
+| Esperar el saque inicial | `T` | — |
+
+**Control de PS5 en Mac:** emparejalo por Bluetooth (Ajustes del Sistema → Bluetooth; en el control mantené **PS + Create** hasta que la luz parpadee) o conectalo por USB-C. Funciona en Chrome y Safari. Con el juego abierto, presioná cualquier botón; aparece el aviso "Control de PlayStation conectado". Los menús se recorren con la cruceta o el stick, con ✕ para aceptar y ○ para volver. El control vibra al disparar y con los goles.
 
 Todos los controles son reasignables en **Pausa → Ajustes → Teclas**.
 

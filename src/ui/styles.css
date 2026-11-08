@@ -213,3 +213,6 @@ select, input[type=text] { background: #0e1830; color: var(--text); border: 1px 
 .letterbox::before, .letterbox::after { content: ''; position: absolute; left: 0; right: 0; height: 9vh; background: #000; z-index: 2; }
 .letterbox::before { top: 0; } .letterbox::after { bottom: 0; }
 ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 4px; }
+
+/* Foco al navegar con control */
+.padfocus { outline: 3px solid var(--accent) !important; outline-offset: 2px; box-shadow: 0 0 18px rgba(242,197,0,.45) !important; }

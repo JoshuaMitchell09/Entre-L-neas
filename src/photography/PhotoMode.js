@@ -93,7 +93,10 @@ export class PhotoMode {
       else { this.s.focal = clamp(this.s.focal * Math.pow(1.08, dir), this.lens.min, this.lens.max); this.clampAperture(); g.audio?.ui('tick'); }
     }
     // Mando: cruceta para zoom
-    if (inp.pad) { if (inp.padTriggerPressed(12)) { this.s.focal = clamp(this.s.focal * 1.15, this.lens.min, this.lens.max); this.clampAperture(); } if (inp.padTriggerPressed(13)) { this.s.focal = clamp(this.s.focal / 1.15, this.lens.min, this.lens.max); } }
+    // Mando: cruceta ↑/↓ mantenida = zoom continuo
+    if (inp.pad && (inp.padHeld(12) || inp.padHeld(13)) && this.lens.min !== this.lens.max) {
+      this.s.focal = clamp(this.s.focal * Math.pow(1.7, (inp.padHeld(12) ? 1 : -1) * dt), this.lens.min, this.lens.max); this.clampAperture();
+    }
     // Parámetros (Q/E seleccionar; Z/X modificar)
     if (inp.wasPressed('paramPrev')) { this.param = (this.param + PARAMS.length - 1) % PARAMS.length; g.audio?.ui('tick'); }
     if (inp.wasPressed('paramNext')) { this.param = (this.param + 1) % PARAMS.length; g.audio?.ui('tick'); }
@@ -188,7 +191,7 @@ export class PhotoMode {
       }
       if (!target) { const pr = this.probe(); target = pr.subject; dist = pr.dist; }
       this.afTarget = target; this.afTargetDist = dist;
-    } else if (this.game.input.wasPressed('autofocus') || (this.game.input.pad && this.game.input.padTriggerPressed(6))) {
+    } else if (this.game.input.wasPressed('autofocus')) {
       const pr = this.probe(); this.afTarget = pr.subject; this.afTargetDist = pr.dist; this.afLocked = true; this.game.audio?.ui('af');
     }
     if (s.af === 'AF-S' && !this.afLocked) return;
@@ -204,7 +207,7 @@ export class PhotoMode {
     if (inv.cardUsed >= inv.cardCapacity) { g.ui.toast('Tarjeta llena. Borrá fotos en la galería (P).', 'warn'); g.audio?.ui('error'); return; }
     if (g.rules && !g.rules.canShoot()) return;
     this.bufferUsed++; inv.drainBattery(1); inv.cardUsed++;
-    g.audio?.shutter(this.cam.sound);
+    g.audio?.shutter(this.cam.sound); g.input.rumble(0.05, 0.35, 45);
     this.blackout = this.cam.sound === 'flagship' ? 0.02 : this.cam.sound === 'basic' ? 0.09 : 0.05;
     this.capture();
   }

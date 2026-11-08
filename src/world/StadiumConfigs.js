@@ -22,3 +22,17 @@ export const STADIUMS = {
     description: 'Graderías empinadas y barras ruidosas. El escenario de los clásicos.',
   },
 };
+// Sede principal: inspirada en la arquitectura del estadio de Tibás conocido como "La Cueva".
+// Tribunas laterales de dos niveles con techos de cerchas blancas, cabeceras abiertas,
+// butacas moradas con pasillos amarillos y fachada granate con letras gigantes.
+STADIUMS.cueva = {
+  id: 'cueva', name: 'Estadio La Cueva', city: 'Tibás', capacity: 23000, tier: 1,
+  nearRows: 26, endRows: 14, farRows: 28, rowDepth: 0.74, rowHeight: 0.5,
+  roof: 'sides', corners: false, lights: 'roof', crowdDensity: 0.92,
+  seatColors: ['#4a2370', '#6e6a78'], aisleColor: '#f2b705', aisleEvery: 9,
+  tiers: { near: { row: 13, rise: 2.2 }, far: { row: 14, rise: 2.6 } },
+  banners: { near: ['ASCENSO TOTAL · LA CASA DEL FÚTBOL TICO', 'JUNTOS SOMOS MÁS FUERTES', 'ASCENSO TOTAL'], far: ['LA VIDA POR LOS COLORES', 'ASCENSO TOTAL · FOTO Y VIDEO', 'AQUÍ SE VIVE EL FÚTBOL'] },
+  facade: '#5c1a33', facadeBand: '#6d1f3a', facadeLetters: ['L', 'A', '★', 'C', 'U', 'E', 'V', 'A'],
+  hasBarra: true, tifo: 'La Cueva nunca duerme',
+  description: 'La Cueva: graderías encima de la cancha, techos de cerchas y una barra que no para de cantar.',
+};

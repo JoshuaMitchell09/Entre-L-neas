@@ -26,7 +26,7 @@ export function drawCredential(c, game) {
   // Datos
   ctx.fillStyle = '#0a0f1c'; ctx.font = '800 22px Arial'; wrap(ctx, (game.playerName || 'Fotógrafo').toUpperCase(), 172, 200, 230, 24);
   ctx.font = '600 13px Arial'; ctx.fillStyle = '#56627a';
-  const rows = [['MEDIO', 'Pura Vida Deportes'], ['FUNCIÓN', 'Reportero gráfico'], ['EVENTO', cr.event || '—'], ['FECHA', cr.date || '—'], ['ESTADIO', cr.stadium || '—']];
+  const rows = [['MEDIO', 'Ascenso Total'], ['FUNCIÓN', 'Reportero gráfico'], ['EVENTO', cr.event || '—'], ['FECHA', cr.date || '—'], ['ESTADIO', cr.stadium || '—']];
   let y = 248; for (const [k, v] of rows) { ctx.fillStyle = '#8a95a8'; ctx.font = '700 10px Arial'; ctx.fillText(k, 172, y); ctx.fillStyle = '#0a0f1c'; ctx.font = '600 13px Arial'; wrap(ctx, v, 172, y + 15, 230, 15); y += 36; }
   // Banda de zona
   ctx.fillStyle = '#e63946'; ctx.fillRect(0, 432, W, 70);

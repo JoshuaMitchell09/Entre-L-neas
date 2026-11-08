@@ -224,7 +224,7 @@ export class Screens {
     const render = () => {
       clear(left); clear(right);
       const evs = c.available(), next = c.nextEvent();
-      left.append(h('div', { style: { display: 'flex', alignItems: 'baseline', gap: '14px', marginBottom: '6px' } }, h('div', { class: 'h1' }, 'REDACCIÓN'), h('div', { class: 'muted' }, `Pura Vida Deportes · Día ${c.day}`)));
+      left.append(h('div', { style: { display: 'flex', alignItems: 'baseline', gap: '14px', marginBottom: '6px' } }, h('div', { class: 'h1' }, 'REDACCIÓN'), h('div', { class: 'muted' }, `Ascenso Total · Día ${c.day}`)));
       left.append(h('div', { class: 'h3', style: { marginTop: '12px' } }, 'Calendario de coberturas'));
       for (const e of evs) {
         const st = STADIUMS[e.stadium];

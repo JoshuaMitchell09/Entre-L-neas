@@ -109,7 +109,7 @@ export class Story {
     }
     const st = STADIUMS[ev.stadium];
     const lines = this.intro ? [
-      { ...M, text: `¡Hola! Vos debés ser ${g.playerName}, el nuevo colaborador de Pura Vida Deportes. Soy Mariana Quesada, coordinadora de prensa de la Liga.` },
+      { ...M, text: `¡Hola! Vos debés ser ${g.playerName}, el nuevo colaborador de Ascenso Total. Soy Mariana Quesada, coordinadora de prensa de la Liga.` },
       { ...M, text: 'Dejame verificar en la lista… aquí estás. Esta es tu acreditación: es personal e intransferible.' },
       { ...M, text: 'Te da acceso al túnel, a la sala de prensa y a las zonas de fotógrafos pintadas en azul detrás de las porterías.' },
       { ...M, text: 'Reglas: nunca pisés la cancha y no entrés al área técnica mientras se juega. Si querés cambiar de lado, rodeá por la banda opuesta o por el pasillo detrás de los bancos. Tres faltas y seguridad te saca.' },
@@ -139,7 +139,7 @@ export class Story {
     if (this.stage !== 'credential' && this.stage !== 'street') return;
     await g.ui.dialogue([
       { ...G, text: '¿Me permite su acreditación, por favor?' },
-      { ...G, text: `${g.playerName}… Pura Vida Deportes… zona Foto · Campo, número ${inv.credential.number}. Todo en orden.` },
+      { ...G, text: `${g.playerName}… Ascenso Total… zona Foto · Campo, número ${inv.credential.number}. Todo en orden.` },
       { ...G, text: 'Ponga la mochila en la banda del escáner y pase por el arco detector, por favor.' },
     ]);
     // Secuencia de inspección real: la mochila viaja por la banda y el jugador cruza el arco
@@ -194,7 +194,7 @@ export class Story {
   async laptop() {
     const g = this.game;
     if (this.stage !== 'post') {
-      await g.ui.dialogue([{ who: 'Laptop de prensa', role: 'Pura Vida Deportes', color: '#0b3d91', initials: 'PV', voice: false, text: 'Sistema de envío de Pura Vida Deportes. Podrás entregar tus fotografías al editor cuando termine el partido. Mientras tanto, podés revisar tu galería con P.' }]);
+      await g.ui.dialogue([{ who: 'Laptop de prensa', role: 'Ascenso Total', color: '#0b3d91', initials: 'AT', voice: false, text: 'Sistema de envío de Ascenso Total. Podrás entregar tus fotografías al editor cuando termine el partido. Mientras tanto, podés revisar tu galería con P.' }]);
       return;
     }
     const E = { who: 'Ricardo Solano', role: 'Editor deportivo · videollamada', color: '#c8102e', initials: 'RS', pitch: 0.9 };

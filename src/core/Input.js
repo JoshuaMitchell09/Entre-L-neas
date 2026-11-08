@@ -58,7 +58,10 @@ export class Input {
   wasPressed(action) { return this.pressed.has(this.bind(action)) || this.padPressed(action); }
   keyPressed(code) { return this.pressed.has(code); }
   // Mapeo de mando estándar (Xbox).
-  static PAD_MAP = { jump: 0, interact: 0, equip: 3, crouch: 1, sprint: 10, pause: 9, gear: 8, paramPrev: 4, paramNext: 5, autofocus: 11, driveMode: 2, inventory: 12, gallery: 13, map: 14, missions: 15, swapBattery: 2 };
+  // Mapeo estándar (DualSense / DualShock / Xbox):
+  // 0 ✕ · 1 ○ · 2 □ · 3 △ · 4 L1 · 5 R1 · 6 L2 · 7 R2 · 8 Create · 9 Options · 10 L3 · 11 R3 · 12-15 cruceta · 16 PS · 17 panel táctil
+  static PAD_MAP = { interact: 0, crouch: 1, jump: 2, driveMode: 2, equip: 3, paramPrev: 4, paramNext: 5, gear: 8, pause: 9, sprint: 10, autofocus: 11,
+    inventory: 12, missions: 13, map: 14, gallery: 15, swapBattery: 17 };
   pollPad() {
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
     this.pad = null;
@@ -75,6 +78,15 @@ export class Input {
   padPressed(action) { const i = Input.PAD_MAP[action]; return i !== undefined && !!this.padNow?.[i] && !this.padPrev[i]; }
   padTrigger(i) { return this.pad ? this.pad.buttons[i]?.value || 0 : 0; }
   padTriggerPressed(i) { return !!this.padNow?.[i] && !this.padPrev[i]; }
+  padHeld(i) { return !!this.padNow?.[i]; }
+  // Marca los botones actuales como ya procesados (evita que un mismo toque active dos cosas).
+  consumePad() { this.padPrev = { ...(this.padNow || {}) }; }
+  get padName() { return this.pad?.id || ''; }
+  get isPlayStation() { return /054c|dualsense|dualshock|wireless controller|playstation/i.test(this.padName); }
+  rumble(strong = 0.5, weak = 0.5, ms = 120) {
+    const a = this.pad?.vibrationActuator; if (!a) return;
+    try { a.playEffect?.('dual-rumble', { duration: ms, strongMagnitude: strong, weakMagnitude: weak }); } catch (e) { /* sin vibración */ }
+  }
   moveVector() {
     let x = 0, y = 0;
     if (this.isDown('forward')) y += 1; if (this.isDown('back')) y -= 1;

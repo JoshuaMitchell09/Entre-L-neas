@@ -117,7 +117,7 @@ export class City {
     const banner = new THREE.Mesh(new THREE.PlaneGeometry(6.2, 0.6), new THREE.MeshBasicMaterial({ map: TX.signTexture('ACREDITACIONES · PRENSA', '#0b3d91', '#ffffff', 1024, 100, 'bold 62px Arial') }));
     banner.position.set(tx, 2.4, tz + 3.12); this.group.add(banner);
     const table = this.box(4, 0.08, 1, stdMat('#f4f4f4', 0.6), tx, 0.78, tz + 1.4);
-    this.box(4, 0.74, 0.04, new THREE.MeshStandardMaterial({ map: TX.signTexture('PURA VIDA DEPORTES · LIGA TICA', '#0b3d91', '#f2c500', 1024, 160, 'bold 54px Arial') }), tx, 0.4, tz + 1.9, { cast: false });
+    this.box(4, 0.74, 0.04, new THREE.MeshStandardMaterial({ map: TX.signTexture('ASCENSO TOTAL · LIGA TICA', '#0b3d91', '#f2c500', 1024, 160, 'bold 54px Arial') }), tx, 0.4, tz + 1.9, { cast: false });
     this.col.addCentered(tx, tz + 1.4, 4.2, 1.1, 1.0);
     // Laptop, impresora de credenciales, cajas de acreditaciones
     this.box(0.36, 0.02, 0.25, stdMat('#222', 0.4, 0.5), tx - 1, 0.83, tz + 1.3);

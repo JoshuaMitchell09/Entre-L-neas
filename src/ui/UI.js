@@ -7,6 +7,9 @@ import { crestCanvas } from '../gfx/Textures.js';
 /*
  * Gestor de interfaz: HUD de exploración, HUD del visor, avisos, diálogos y pantallas modales.
  */
+// Íconos del control (DualSense) por acción
+const PAD_GLYPHS = { interact: '✕', crouch: '○', jump: '□', driveMode: '□', equip: '△', paramPrev: 'L1', paramNext: 'R1', paramDec: '←', paramInc: '→',
+  autofocus: 'R3', sprint: 'L3', gear: 'Create', pause: 'Options', swapBattery: 'Panel', inventory: '↑', missions: '↓', map: '←', gallery: '→', zoomIn: '↑', zoomOut: '↓', walk: '—', forward: 'L↑', back: 'L↓', left: 'L←', right: 'L→' };
 export class UI {
   constructor(game) {
     this.game = game; this.root = document.getElementById('ui-root'); this.screen = null; this.screenName = null;
@@ -69,7 +72,9 @@ export class UI {
     clearTimeout(this.hintT); if (ms) this.hintT = setTimeout(() => this.hintEl.classList.remove('show'), ms);
   }
   fade(on) { this.fadeEl.classList.toggle('on', on); return new Promise((r) => setTimeout(r, 520)); }
-  key(action) { const c = this.game.settings.data.bindings[action] || ''; return c.replace('Key', '').replace('Digit', '').replace('ShiftLeft', 'Shift').replace('AltLeft', 'Alt').replace('Escape', 'Esc').replace('Space', 'Espacio'); }
+  key(action) {
+    if (this.game.input.lastDevice === 'pad') return PAD_GLYPHS[action] || '';
+    const c = this.game.settings.data.bindings[action] || ''; return c.replace('Key', '').replace('Digit', '').replace('ShiftLeft', 'Shift').replace('AltLeft', 'Alt').replace('Escape', 'Esc').replace('Space', 'Espacio'); }
   // ---------- Actualización por frame ----------
   update(dt) {
     const g = this.game;
@@ -148,7 +153,8 @@ export class UI {
       h('div', { class: 'p' }, h('small', {}, 'FOCAL'), `${Math.round(pm.s.focal)}mm`), h('div', { class: 'p' }, h('small', {}, 'EQUIV.'), `${Math.round(pm.focalEff)}mm`));
     const bp = inv.batteryPct;
     v.top.innerHTML = `<span>${inv.camera.name} · ${inv.lens.short}</span><span class="${bp < 20 ? 'warn' : ''}">▮ ${bp}%</span><span class="${inv.cardCapacity - inv.cardUsed < 20 ? 'warn' : ''}">[${inv.cardCapacity - inv.cardUsed}]</span><span>BUFFER ${Math.max(0, inv.camera.buffer - pm.bufferUsed)}</span>${pm.shakeRate() < 0.012 ? '<span>ESTABLE</span>' : pm.shakeRate() > 0.06 ? '<span class="warn">PULSO INESTABLE</span>' : ''}${g.player.crouch ? '<span>ÁNGULO BAJO</span>' : ''}`;
-    v.help.innerHTML = `<kbd>Clic</kbd>Disparar · <kbd>Rueda</kbd>Zoom · <kbd>${this.key('autofocus')}</kbd>AF · <kbd>${this.key('paramPrev')}</kbd><kbd>${this.key('paramNext')}</kbd>Parámetro · <kbd>${this.key('paramDec')}</kbd><kbd>${this.key('paramInc')}</kbd>Valor<br><kbd>${this.key('driveMode')}</kbd>Ráfaga · <kbd>${this.key('crouch')}</kbd>Arrodillarse · <kbd>Clic der.</kbd>/<kbd>Esc</kbd>Bajar cámara · <kbd>${this.key('swapBattery')}</kbd>Batería`;
+    if (g.input.lastDevice === 'pad') v.help.innerHTML = `<kbd>R2</kbd>Disparar · <kbd>↑</kbd><kbd>↓</kbd>Zoom · <kbd>R3</kbd>AF · <kbd>L1</kbd><kbd>R1</kbd>Parámetro · <kbd>←</kbd><kbd>→</kbd>Valor<br><kbd>□</kbd>Ráfaga · <kbd>○</kbd>Arrodillarse · <kbd>L2</kbd>Bajar cámara · <kbd>Panel</kbd>Batería`;
+    else v.help.innerHTML = `<kbd>Clic</kbd>Disparar · <kbd>Rueda</kbd>Zoom · <kbd>${this.key('autofocus')}</kbd>AF · <kbd>${this.key('paramPrev')}</kbd><kbd>${this.key('paramNext')}</kbd>Parámetro · <kbd>${this.key('paramDec')}</kbd><kbd>${this.key('paramInc')}</kbd>Valor<br><kbd>${this.key('driveMode')}</kbd>Ráfaga · <kbd>${this.key('crouch')}</kbd>Arrodillarse · <kbd>Clic der.</kbd>/<kbd>Esc</kbd>Bajar cámara · <kbd>${this.key('swapBattery')}</kbd>Batería`;
     v.rec.style.display = g.input.mouse.left && pm.s.drive === 'burst' ? 'block' : 'none';
     v.blackout.style.opacity = pm.blackout > 0 ? 1 : 0;
     const lr = pm.lastResult;
@@ -184,7 +190,8 @@ export class UI {
         if (lines[i].options) return;
         i++; if (i >= lines.length) finish(null); else show();
       };
-      const finish = (v) => { clearInterval(typing); document.removeEventListener('keydown', onKey); box.removeEventListener('click', next); clear(this.dlgEl); this.dialogueActive = false; resolve(v); };
+      this.dialogueNext = next;
+      const finish = (v) => { this.dialogueNext = null; clearInterval(typing); document.removeEventListener('keydown', onKey); box.removeEventListener('click', next); clear(this.dlgEl); this.dialogueActive = false; resolve(v); };
       const onKey = (e) => { if (['Space', 'KeyE', 'Enter'].includes(e.code)) { e.preventDefault(); next(); } };
       box.addEventListener('click', next); document.addEventListener('keydown', onKey);
       show();
@@ -204,12 +211,66 @@ export class UI {
   }
   confirm(text, okLabel = 'Confirmar', danger = true) {
     return new Promise((res) => {
-      const layer = h('div', { class: 'screen', style: { zIndex: 30 } });
+      const layer = h('div', { class: 'screen confirm-layer', style: { zIndex: 30 } });
       const done = (v) => { layer.remove(); res(v); };
       layer.append(h('div', { class: 'panel confirm' }, h('div', { class: 'h2' }, '¿Estás seguro?'), h('div', { class: 'muted' }, text),
         h('div', { class: 'acts' }, h('button', { class: 'btn', onclick: () => done(false) }, 'Cancelar'), h('button', { class: 'btn ' + (danger ? 'danger' : 'primary'), onclick: () => done(true) }, okLabel))));
       this.root.appendChild(layer);
     });
+  }
+  // Navegación de menús con el control: cruceta / stick izq. mueven el foco, ✕ acepta, ○ vuelve.
+  padNav(dt) {
+    const inp = this.game.input; if (!inp.pad) return;
+    this.navCD = Math.max(0, (this.navCD || 0) - dt);
+    const confirmLayer = this.root.querySelector('.confirm-layer');
+    const dlg = this.dlgEl.firstChild;
+    const root = confirmLayer || (dlg && dlg.querySelector('.opts') ? dlg : null) || this.screen;
+    // Diálogo sin opciones: ✕ / ○ avanzan
+    if (dlg && !dlg.querySelector('.opts') && !confirmLayer) {
+      if (inp.padTriggerPressed(0) || inp.padTriggerPressed(1)) { this.dialogueNext?.(); inp.consumePad(); }
+      return;
+    }
+    if (!root) { if (this.navEl) { this.navEl.classList.remove('padfocus'); this.navEl = null; } return; }
+    const items = [...root.querySelectorAll('button:not([disabled]), .tab, .ph, select, input[type=range], input[type=checkbox]')]
+      .filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < window.innerHeight; });
+    if (!items.length) return;
+    if (!this.navEl || !items.includes(this.navEl)) this.focusNav(items.find((e) => e.classList.contains('primary')) || items[0]);
+    const ax = inp.padAxes?.[0] || 0, ay = inp.padAxes?.[1] || 0;
+    let dx = (inp.padHeld(15) ? 1 : 0) - (inp.padHeld(14) ? 1 : 0) + (Math.abs(ax) > 0.5 ? Math.sign(ax) : 0);
+    let dy = (inp.padHeld(13) ? 1 : 0) - (inp.padHeld(12) ? 1 : 0) + (Math.abs(ay) > 0.5 ? Math.sign(ay) : 0);
+    const cur = this.navEl;
+    if ((dx || dy) && this.navCD <= 0) {
+      this.navCD = 0.18;
+      if (cur.type === 'range' && dx && !dy) { const st = +cur.step || 1; cur.value = +cur.value + dx * st * (Math.abs(+cur.max - +cur.min) / st > 40 ? 3 : 1); cur.dispatchEvent(new Event('input')); }
+      else {
+        const a = cur.getBoundingClientRect(), ac = [a.left + a.width / 2, a.top + a.height / 2];
+        let best = null, bs = Infinity;
+        for (const e of items) {
+          if (e === cur) continue;
+          const r = e.getBoundingClientRect(), c = [r.left + r.width / 2, r.top + r.height / 2];
+          const vx = c[0] - ac[0], vy = c[1] - ac[1];
+          const along = dx ? vx * Math.sign(dx) : vy * Math.sign(dy), across = dx ? Math.abs(vy) : Math.abs(vx);
+          if (along <= 4) continue;
+          const sc = along + across * 2.5; if (sc < bs) { bs = sc; best = e; }
+        }
+        if (best) { this.focusNav(best); this.game.audio?.ui('tick'); }
+      }
+    }
+    if (inp.padTriggerPressed(0)) {
+      inp.consumePad();
+      if (cur.tagName === 'SELECT') { cur.selectedIndex = (cur.selectedIndex + 1) % cur.options.length; cur.dispatchEvent(new Event('change')); }
+      else if (cur.type === 'checkbox') { cur.checked = !cur.checked; cur.dispatchEvent(new Event('change')); }
+      else cur.click();
+      this.game.audio?.ui('click');
+    } else if (inp.padTriggerPressed(1)) {
+      inp.consumePad();
+      if (confirmLayer) confirmLayer.querySelector('.btn')?.click();
+      else if (!dlg) { const back = [...root.querySelectorAll('button')].find((b) => /Volver|Cancelar|Cerrar|Reanudar/.test(b.textContent)); if (back) back.click(); else if (this.game.state === 'play') this.game.resume(); }
+    }
+  }
+  focusNav(el) {
+    this.navEl?.classList.remove('padfocus'); this.navEl = el; el.classList.add('padfocus');
+    el.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
   }
   crest(team, size = 36) { const c = crestCanvas(team, size * 2); c.style.width = size + 'px'; c.style.height = size + 'px'; return c; }
 }

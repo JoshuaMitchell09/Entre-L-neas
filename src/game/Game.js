@@ -67,7 +67,7 @@ export class Game {
   bindEvents() {
     const E = this.events;
     E.on('match:goal', ({ team }) => {
-      this.audio.goalRoar(1); const st = this.stadium; if (!st) return;
+      this.audio.goalRoar(1); if (this.player.pos.z < (this.stadium?.gateZ ?? 0)) this.input.rumble(0.8, 0.6, 700); const st = this.stadium; if (!st) return;
       st.crowd.uniforms.uFocus.value.set(this.match.ball.pos.x * 1.2, 0, 0); st.crowd.uniforms.uFocusAmt.value = 0.8;
       this.career.stats.goals++;
     });
@@ -204,7 +204,7 @@ export class Game {
       p.setCameraEquipped(!p.cameraEquipped); this.audio.ui('click');
       this.ui.toast(p.cameraEquipped ? `Cámara equipada: ${this.inventory.camera.name} + ${this.inventory.lens.short}` : 'Cámara guardada', 'info', 1400);
     }
-    if (inp.mouse.rightPressed || inp.padTriggerPressed?.(6) && !pm.active) {
+    if (inp.mouse.rightPressed || inp.padTriggerPressed(6)) {
       if (pm.active) pm.exit();
       else { if (!p.cameraEquipped) p.setCameraEquipped(true); pm.enter(); }
     }
@@ -228,6 +228,9 @@ export class Game {
   update(dt) {
     this.time += dt;
     this.input.pollPad();
+    if (this.input.pad && !this.padAnnounced) { this.padAnnounced = true; this.audio.start(); this.ui.toast(this.input.isPlayStation ? '🎮 Control de PlayStation conectado' : '🎮 Control conectado', 'good'); }
+    if (!this.input.pad) this.padAnnounced = false;
+    this.ui.padNav(dt);
     const st = this.stadium, m = this.match, p = this.player;
     if (this.state === 'menu' || this.state === 'hub') {
       // Cámara orbital cinematográfica sobre el estadio
@@ -289,7 +292,7 @@ export class Game {
     const interior = st && p.pos.z > APRON_Z + 0.5 && p.pos.z < st.gateZ && Math.abs(p.pos.x) < 25;
     this.audio.updateListener(this.camera);
     this.audio.update(dt, { inStadiumBowl: st && Math.abs(p.pos.x) < APRON_X + 1 && Math.abs(p.pos.z) < APRON_Z + 0.5, interior, distToStadium: st ? Math.max(0, p.pos.z - st.gateZ) : 0,
-      excite: m ? m.excite : 0.1, weather: this.env.weather, time: this.env.time, crowd: true, city: true, clasico: !!this.stadium?.cfg.clasico });
+      excite: m ? m.excite : 0.1, weather: this.env.weather, time: this.env.time, crowd: true, city: true, clasico: !!(this.stadium?.cfg.clasico || this.career.event?.clasico) });
     this.ui.update(dt);
   }
   render() {

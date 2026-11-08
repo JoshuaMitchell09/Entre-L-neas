@@ -1,5 +1,8 @@
 // Clubes ficticios inspirados en el ambiente del fútbol costarricense (sin marcas reales).
 export const TEAMS = {
+  tibas: { id: 'tibas', name: 'Deportivo Tibás', short: 'TIB', city: 'Tibás',
+    colors: { primary: '#4a2370', secondary: '#ffffff', shorts: '#ffffff', socks: '#4a2370', ink: '#ffffff' },
+    gk: { shirt: '#c6ff00', shorts: '#1a1a1a' }, style: { pace: 1.02, pass: 1.05, shoot: 1.02 } },
   toros: { id: 'toros', name: 'Toros del Valle FC', short: 'TOR', city: 'San Isidro',
     colors: { primary: '#c8102e', secondary: '#111111', shorts: '#111111', socks: '#c8102e', ink: '#ffffff' },
     gk: { shirt: '#f2c500', shorts: '#222222' }, style: { pace: 1.0, pass: 0.95, shoot: 1.0 } },
