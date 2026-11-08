@@ -77,6 +77,13 @@ Todos los controles son reasignables en **Pausa → Ajustes → Teclas**.
 - **Puerta de seguridad nueva:** puerta automática de vidrio transparente, corrediza, con marco de aluminio y sensor. Se abre sola al acercarte una vez que pasaste el control.
   - Antes había una pared detrás de la puerta y el jugador la atravesaba. Ahora la puerta da directo al pasillo.
 
+- **Personalizá a tu fotógrafo:** al crear la carrera (o en *Pausa → Perfil → Personalizar apariencia*, o en *Arcade → Apariencia*) elegís:
+  - Hombre o mujer.
+  - Uno de 10 tonos de piel.
+  - Peinado (corto, rapado, degradado, rizado, largo con cola o calvo), color de pelo y barba.
+  - Camisa, pantalón y gorra.
+
+  Hay una vista previa 3D que podés girar. La apariencia se guarda en la partida, y Mariana, Kendall, la familia y los demás te hablan en masculino o femenino según elijas.
 - **Modo dron / tráiler** (`K` o *Pausa → Modo dron*): para grabar videos del juego.
   - **7 tomas:** dron libre, órbita del estadio, sobrevuelo cinematográfico, cámara de transmisión de TV, riel de banda, seguir el balón y seguir a un jugador.
   - **Efectos:** cámara lenta (×0.5, ×0.25, ×0.1), franjas de cine 2.39:1 y zoom.
