@@ -31,7 +31,57 @@ export class AudioEngine {
     this.rainBed = this.loop(this.white, 'highpass', 1200, 0.5, this.amb, 0.0);
     this.windBed = this.loop(this.brown, 'lowpass', 500, 1, this.amb, 0.0);
     this.applyVolumes();
+    this.custom = {}; this.loadCustomAudio();
   }
+  // ---------- Audio propio del jugador (archivos en public/audio o elegidos en Ajustes) ----------
+  static CUSTOM = { estadio1: { file: 'estadio_1', label: 'Ambiente de estadio 1' }, estadio2: { file: 'estadio_2', label: 'Ambiente de estadio 2 (cánticos)' }, menu: { file: 'menu', label: 'Música de inicio' } };
+  idb() {
+    return new Promise((res) => { try { const rq = indexedDB.open('entrelineas-audio', 1); rq.onupgradeneeded = () => rq.result.createObjectStore('files'); rq.onsuccess = () => res(rq.result); rq.onerror = () => res(null); } catch (e) { res(null); } });
+  }
+  async storedBlob(key) {
+    const db = await this.idb(); if (!db) return null;
+    return new Promise((res) => { const rq = db.transaction('files').objectStore('files').get(key); rq.onsuccess = () => res(rq.result || null); rq.onerror = () => res(null); });
+  }
+  async storeBlob(key, blob) {
+    const db = await this.idb(); if (!db) return;
+    await new Promise((res) => { const tx = db.transaction('files', 'readwrite'); blob ? tx.objectStore('files').put(blob, key) : tx.objectStore('files').delete(key); tx.oncomplete = res; tx.onerror = res; });
+  }
+  async decode(arrayBuf) { try { return await this.ctx.decodeAudioData(arrayBuf); } catch (e) { return null; } }
+  async loadCustomAudio() {
+    for (const [key, def] of Object.entries(AudioEngine.CUSTOM)) {
+      let buf = null;
+      const blob = await this.storedBlob(key);
+      if (blob) buf = await this.decode(await blob.arrayBuffer());
+      if (!buf) for (const ext of ['mp3', 'm4a', 'ogg', 'wav', 'webm']) {
+        try {
+          const r = await fetch(`audio/${def.file}.${ext}`);
+          const type = r.headers.get('content-type') || '';
+          if (!r.ok || type.includes('text/html')) continue;
+          buf = await this.decode(await r.arrayBuffer()); if (buf) break;
+        } catch (e) { /* no existe */ }
+      }
+      this.setCustom(key, buf);
+    }
+  }
+  setCustom(key, buf) {
+    const old = this.custom[key]; if (old) { try { old.src.stop(); } catch (e) { /* ya detenido */ } old.g.disconnect(); }
+    delete this.custom[key];
+    if (!buf) return;
+    const src = this.ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+    const g = this.ctx.createGain(); g.gain.value = 0;
+    src.connect(g); g.connect(key === 'menu' ? this.music : this.crowdFilter);
+    src.start(0, key === 'menu' ? 0 : Math.random() * Math.max(0, buf.duration - 1));
+    this.custom[key] = { src, g, duration: buf.duration };
+    this.game.events?.emit('audio:custom', key);
+  }
+  async loadFile(key, file) {
+    if (!this.ctx) this.start();
+    const buf = await this.decode(await file.arrayBuffer());
+    if (!buf) return false;
+    await this.storeBlob(key, file); this.setCustom(key, buf); return true;
+  }
+  async clearFile(key) { await this.storeBlob(key, null); this.setCustom(key, null); }
+  hasCustom(key) { return !!this.custom?.[key]; }
   applyVolumes() {
     if (!this.ctx) return;
     const s = this.game.settings.data;
@@ -81,7 +131,12 @@ export class AudioEngine {
     this.crowdFilter.frequency.setTargetAtTime(inStadiumBowl ? 9000 : interior ? 520 : 900, this.ctx.currentTime, 0.3);
     this.revGain.gain.setTargetAtTime(interior ? 0.5 : inStadiumBowl ? 0.18 : 0.08, this.ctx.currentTime, 0.4);
     this.crowdBus.gain.setTargetAtTime(crowdLvl * (clasico ? 1.25 : 1), this.ctx.currentTime, 0.5);
-    this.setGain(this.crowdBed, 0.22 + excite * 0.35, 0.3);
+    const c1 = this.custom?.estadio1, c2 = this.custom?.estadio2, menu = this.custom?.menu;
+    const customCrowd = !!(c1 || c2);
+    if (c1) c1.g.gain.setTargetAtTime(0.75 + excite * 0.5, this.ctx.currentTime, 0.6);
+    if (c2) c2.g.gain.setTargetAtTime(0.35 + excite * 0.75, this.ctx.currentTime, 0.6);
+    if (menu) menu.g.gain.setTargetAtTime(st.menu ? 0.9 : 0, this.ctx.currentTime, st.menu ? 0.8 : 0.5);
+    this.setGain(this.crowdBed, (0.22 + excite * 0.35) * (customCrowd ? 0.3 : 1), 0.3);
     this.setGain(this.crowdRoar, Math.max(0, excite - 0.35) * 0.55, 0.15);
     this.crowdRoar.f.frequency.setTargetAtTime(1100 + excite * 900, this.ctx.currentTime, 0.2);
     this.setGain(this.cityBed, city ? (inStadiumBowl ? 0.05 : interior ? 0.08 : 0.35) : 0, 1);
@@ -89,7 +144,7 @@ export class AudioEngine {
     this.setGain(this.windBed, interior ? 0.02 : 0.08 + (weather === 'rain' ? 0.08 : 0), 1);
     // Cánticos y bombo de la barra
     if (crowd && crowdLvl > 0.05) {
-      this.nextChant -= dt * (1 + excite * 2 + (clasico ? 1 : 0));
+      this.nextChant -= dt * (1 + excite * 2 + (clasico ? 1 : 0)) * (this.custom?.estadio2 ? 0.25 : 1);
       if (this.nextChant <= 0) { this.chant(); this.nextChant = rand(18, 34); this.chanting = 9; }
       if (this.chanting > 0 || clasico || excite > 0.5) {
         this.chanting -= dt; this.nextDrum -= dt;

@@ -257,7 +257,7 @@ export class Game {
       this.camera.lookAt(0, 2, 0); this.camera.fov = 50; this.camera.updateProjectionMatrix();
       if (st) { st.update(dt, this.time, m?.excite || 0.2); st.crowd.uniforms.uExcite.value = 0.25; }
       this.env.update(dt, new THREE.Vector3(0, 0, 0), this.time);
-      this.audio.update(dt, { inStadiumBowl: true, interior: false, distToStadium: 0, excite: 0.25, weather: this.env.weather, time: this.env.time, crowd: !!st, city: false });
+      this.audio.update(dt, { inStadiumBowl: true, interior: false, distToStadium: 0, excite: 0.25, weather: this.env.weather, time: this.env.time, crowd: !!st, city: false, menu: true });
       this.player.root.visible = false;
       return;
     }

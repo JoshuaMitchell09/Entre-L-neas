@@ -102,6 +102,13 @@ Galería con filtros (evento, favoritas, seleccionadas, entregadas, tipo de juga
 ### Guardado
 Autoguardado en hitos, 3 ranuras manuales, cargar, continuar, nueva partida y eliminar con confirmación. Ajustes persistentes (gráficos, sensibilidad, volumen, teclas, duración del partido).
 
+### Tus propios sonidos (ambiente de estadio y música de inicio)
+El juego puede usar audio tuyo en lugar del ambiente generado:
+- **Opción 1:** copiá tus archivos a `public/audio/` con los nombres `estadio_1.mp3` (público de fondo), `estadio_2.mp3` (cánticos/barra) y `menu.mp3` (música de inicio). También acepta `.m4a`, `.ogg` o `.wav`.
+- **Opción 2:** en el juego, **Ajustes → Audio → Tus sonidos → Elegir…**. Quedan guardados en el navegador.
+
+El ambiente se mezcla con la intensidad del partido y se amortigua en pasillos y túnel; la música suena en el menú y en la Redacción. Usá solo audio propio o con permiso. La carpeta `public/audio` está excluida de Git para no subir archivos con derechos.
+
 ### Fotorrealismo y primera persona
 - Iluminación por mapa de entorno (IBL) generada desde el cielo físico o desde los focos nocturnos: reflejos coherentes en césped mojado, plásticos y metal.
 - Bóveda de nubes según el clima (despejado, nublado, lluvia) y tonos de atardecer; niebla atmosférica.

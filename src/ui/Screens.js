@@ -10,6 +10,7 @@ import { QUALITY_PRESETS } from '../core/Settings.js';
 import { ACTION_LABELS, DEFAULT_BINDINGS } from '../core/Input.js';
 import { formatMoney, formatClock } from '../core/MathUtil.js';
 import { LABELS } from '../photography/PhotoEvaluator.js';
+import { AudioEngine } from '../audio/AudioEngine.js';
 
 const ICONS = { camera: '📷', lens: '🔭', card: '💾', battery: '🔋', accessory: '🧰', backpack: '🎒', credential: '🪪' };
 
@@ -196,6 +197,16 @@ export class Screens {
         h('div', { class: 'h3' }, 'Control'), row('Sensibilidad', rng('sensitivity', 0.2, 3, 0.05)), row('Invertir eje Y', chk('invertY')),
         h('div', { class: 'h3', style: { marginTop: '14px' } }, 'Audio'), row('Volumen general', rng('master', 0, 1, 0.01, () => g.audio.applyVolumes())), row('Cánticos / música', rng('music', 0, 1, 0.01, () => g.audio.applyVolumes())),
         row('Efectos', rng('sfx', 0, 1, 0.01, () => g.audio.applyVolumes())), row('Ambiente', rng('ambient', 0, 1, 0.01, () => g.audio.applyVolumes())), row('Voces sintetizadas', chk('voices')),
+        h('div', { class: 'h3', style: { marginTop: '14px' } }, 'Tus sonidos'),
+        h('div', { class: 'muted', style: { fontSize: '12px', marginBottom: '6px' } }, 'Usá audios propios o con permiso (MP3, M4A, OGG o WAV). Se guardan en este navegador; también podés ponerlos en la carpeta public/audio.'),
+        ...Object.entries(AudioEngine.CUSTOM).map(([key, def]) => {
+          const status = h('span', { class: 'muted', style: { fontSize: '12px', marginRight: '6px' } }, g.audio.hasCustom(key) ? '✔ cargado' : 'sin archivo');
+          const inp = h('input', { type: 'file', accept: 'audio/*', style: { display: 'none' } });
+          inp.addEventListener('change', async () => { const f = inp.files[0]; if (!f) return; status.textContent = 'cargando…'; const ok = await g.audio.loadFile(key, f); status.textContent = ok ? '✔ ' + f.name.slice(0, 22) : '✖ formato no válido'; g.ui.toast(ok ? `${def.label}: ${f.name}` : 'No se pudo leer ese audio.', ok ? 'good' : 'warn'); });
+          return row(def.label, h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' } }, status, inp,
+            h('button', { class: 'btn small', onclick: () => inp.click() }, 'Elegir…'),
+            h('button', { class: 'btn small', onclick: async () => { await g.audio.clearFile(key); status.textContent = 'sin archivo'; } }, 'Quitar')));
+        }),
         h('div', { class: 'h3', style: { marginTop: '14px' } }, 'Partido'), row('Duración de cada tiempo', sel('halfSeconds', [[150, 'Corto (2,5 min)'], [240, 'Normal (4 min)'], [360, 'Largo (6 min)'], [540, 'Extendido (9 min)']]))),
       h('div', {}, h('div', { class: 'h3' }, 'Teclas'), keys)));
   }
