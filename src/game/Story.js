@@ -89,7 +89,7 @@ export class Story {
       credential: 'Andá al acceso de prensa del estadio y pasá el control de seguridad.',
       inside: `Cruzá el túnel y buscá a Don Álvaro detrás de la portería este. Saque inicial: ${ko}.`,
       field: 'Hablá con Don Álvaro en la zona de prensa este.',
-      briefed: this.kickedOff ? 'Cubrí el partido: buscá las mejores jugadas.' : `Fotografiá el calentamiento. El partido inicia a las ${ko}.`,
+      briefed: this.kickedOff ? 'Cubrí el partido: buscá las mejores jugadas.' : `Fotografiá el calentamiento. El partido inicia a las ${ko} (T: esperar el saque).`,
       match: 'Cubrí el partido. Anticipá las jugadas y respetá las zonas de prensa.',
       post: 'Partido terminado: andá a la sala de prensa y entregá tus fotos al editor.',
       done: 'Cobertura entregada.',

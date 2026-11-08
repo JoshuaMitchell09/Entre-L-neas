@@ -59,8 +59,13 @@ export class Environment {
     this.lightK = time === 'night' ? 5200 : weather !== 'clear' ? 6200 : T.sunK;
     if (floodOn && stadiumLights.length) {
       const fK = kelvinToRGB(5200), fc = new THREE.Color(fK[0], fK[1], fK[2]).multiplyScalar(1 / Math.max(...fK));
-      const per = time === 'night' ? 2.4 : 0.8;
-      for (const p of stadiumLights) {
+      // Máx. 4 focos reales: se agrupan las fuentes por cuadrante (misma energía total).
+      const quads = new Map();
+      for (const p of stadiumLights) { const k = (p.x >= 0 ? 1 : 0) + (p.z >= 0 ? 2 : 0); if (!quads.has(k)) quads.set(k, []); quads.get(k).push(p); }
+      const groups = [...quads.values()].map((arr) => ({ p: arr.reduce((a, b) => a.add(b), new THREE.Vector3()).multiplyScalar(1 / arr.length), n: arr.length }));
+      const totalN = stadiumLights.length;
+      const per = (time === 'night' ? 2.4 : 0.8) * Math.min(1.6, Math.sqrt(totalN / 4));
+      for (const { p } of groups) {
         const s = new THREE.SpotLight(fc, per * 900, 260, 0.62, 0.6, 1.6);
         s.position.copy(p); s.target.position.set(p.x * 0.1, 0, p.z * 0.1);
         s.castShadow = false;
