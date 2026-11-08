@@ -105,7 +105,7 @@ export class Phone {
   }
   startTopic(id, t) { (this.used[id] ||= []).push(t.key); this.send(id, t); }
   notify(c, text) {
-    const g = this.game; if (!c) return;
+    const g = this.game; if (!c || g.drone?.active) return;
     g.audio?.ui('tick'); setTimeout(() => g.audio?.ui('tick'), 140); g.input.rumble(0.15, 0.35, 90);
     const el = h('div', { class: 'phone-notif' }, h('div', { class: 'pn-ic', style: { background: c.color } }, c.emoji), h('div', {}, h('b', {}, c.name), h('div', {}, text.length > 90 ? text.slice(0, 88) + '…' : text)), h('kbd', {}, g.ui.key('phone')));
     const box = this.notifBox || (this.notifBox = h('div', { class: 'phone-notifs' }));

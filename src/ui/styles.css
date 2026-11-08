@@ -283,3 +283,11 @@ select, input[type=text] { background: #0e1830; color: var(--text); border: 1px 
 .phone-hud i { font-style: normal; background: #ff3b4f; color: #fff; border-radius: 9px; padding: 0 6px; margin-left: 6px; font-weight: 700; }
 .toast.fan { border-color: #4ea1ff; color: #d8e9ff; font-style: italic; }
 .ph-hint { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin: 6px 2px 0; }
+
+/* ---------- Modo dron ---------- */
+.drone-ui { position: absolute; left: 16px; right: 16px; bottom: 14px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; z-index: 6; }
+.drone-ui .btn { pointer-events: auto; }
+.dr-top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 14px; background: rgba(5,10,20,.7); padding: 8px 12px; border-radius: 10px; align-self: flex-start; }
+.dr-modes { display: flex; flex-wrap: wrap; gap: 6px; }
+.dr-help { font-size: 12px; color: var(--muted); background: rgba(5,10,20,.6); padding: 6px 10px; border-radius: 8px; align-self: flex-start; line-height: 1.5; }
+.dr-rec { color: #ff4d5e; font-weight: 800; letter-spacing: 1px; animation: blink 1s infinite; }

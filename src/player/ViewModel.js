@@ -25,7 +25,7 @@ export class ViewModel {
     this.sway = new THREE.Vector2(); this.lastYaw = 0; this.lastPitch = 0; this.t = 0;
   }
   update(dt) {
-    const g = this.game, p = g.player, show = g.follow.firstPerson && p.cameraEquipped && !g.photoMode.active && !g.ui.screen && g.state === 'play';
+    const g = this.game, p = g.player, show = !g.drone?.active && g.follow.firstPerson && p.cameraEquipped && !g.photoMode.active && !g.ui.screen && g.state === 'play';
     this.root.visible = show; if (!show) return;
     const L = g.inventory.lens; this.lens.scale.set(1 + L.max / 900, 1 + L.max / 900, 0.06 + L.max / 2200); this.ring.position.z = -0.04 - this.lens.scale.z * 0.8;
     const dy = g.follow.yaw - this.lastYaw, dp = g.follow.fpPitch - this.lastPitch; this.lastYaw = g.follow.yaw; this.lastPitch = g.follow.fpPitch;

@@ -33,6 +33,7 @@ import { ViewModel } from '../player/ViewModel.js';
 import { Story } from './Story.js';
 import { Phone } from '../phone/Phone.js';
 import { CrowdLife } from '../world/CrowdLife.js';
+import { DroneCam } from '../cinema/DroneCam.js';
 import { clamp } from '../core/MathUtil.js';
 
 export class Game {
@@ -55,7 +56,7 @@ export class Game {
     this.interaction = new InteractionSystem(this); this.photoMode = new PhotoMode(this);
     this.player = new PlayerController(this); this.follow = new FollowCamera(this, this.camera);
     this.post = new PostFX(this); this.scene.add(this.camera); this.viewModel = new ViewModel(this);
-    this.phone = new Phone(this); this.crowdLife = new CrowdLife(this);
+    this.phone = new Phone(this); this.crowdLife = new CrowdLife(this); this.drone = new DroneCam(this);
     this.state = 'boot'; this.clock = 15 * 60; this.time = 0; this.fps = 60; this.inEvent = false; this.cinematic = false;
     this.playerName = 'Fotógrafo'; this.profileId = null; this.menuT = 0;
     this.resize(); window.addEventListener('resize', () => this.resize());
@@ -249,6 +250,7 @@ export class Game {
   }
   onEscape() {
     if (this.state !== 'play') return;
+    if (this.drone.active) { this.drone.exit(); return; }
     if (this.photoMode.active) { this.photoMode.exit(); return; }
     if (this.ui.dialogueActive || this.cinematic) return;
     if (this.ui.screen) { this.resume(); return; }
@@ -256,6 +258,7 @@ export class Game {
   }
   handleInput() {
     const inp = this.input, pm = this.photoMode, p = this.player;
+    if (this.drone.active) { if (inp.keyPressed('Escape')) this.drone.exit(); return; }
     if (inp.keyPressed('Escape') || inp.padPressed('pause')) this.onEscape();
     if (this.ui.screenName === 'phone' && (inp.keyPressed(inp.bind('phone')) || inp.padPressed('phone'))) { inp.consumePad(); this.resume(); return; }
     if (this.ui.screen || this.ui.dialogueActive || this.cinematic) return;
@@ -266,6 +269,7 @@ export class Game {
       if (inp.wasPressed('missions')) return this.screens.pause('misiones');
       if (inp.wasPressed('gear')) return this.screens.pause('inventario');
       if (inp.wasPressed('phone')) { inp.consumePad(); return this.phone.open(); }
+      if (inp.keyPressed('KeyK')) return this.drone.enter();
       if (inp.wasPressed('interact')) this.interaction.interact();
       if (inp.wasPressed('view')) this.toggleView();
     }
@@ -301,7 +305,7 @@ export class Game {
       requestAnimationFrame(loop);
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
       this.fps = this.fps * 0.95 + (1 / Math.max(dt, 1e-3)) * 0.05;
-      try { this.update(dt); this.render(); } catch (e) { console.error(e); }
+      try { this.update(this.drone.active ? dt * this.drone.timeScale : dt); this.drone.update(); this.render(); } catch (e) { console.error(e); }
       this.input.endFrame();
     };
     requestAnimationFrame(loop);
@@ -326,15 +330,15 @@ export class Game {
       this.player.root.visible = false;
       return;
     }
-    if (this.state !== 'play') return;
+    if (this.state !== 'play') { if (this.drone.active) this.drone.exit(); return; }
     this.handleInput();
     const paused = !!this.ui.screen;
     if (paused) { this.phone.update(dt); this.ui.update(dt); return; }
-    const freeMove = !this.ui.dialogueActive && !this.cinematic;
+    const freeMove = !this.ui.dialogueActive && !this.cinematic && !this.drone.active;
     if (!this.photoMode.active) {
       this.follow.update(dt, this.input, p, freeMove && (this.input.locked || this.input.pad));
       p.update(dt, this.input, this.follow.yaw, freeMove);
-      p.root.visible = !this.follow.firstPerson && !this.camOverride;
+      p.root.visible = this.drone.active || (!this.follow.firstPerson && !this.camOverride);
     } else {
       p.update(dt, this.input, this.photoMode.yaw, freeMove);
       this.photoMode.update(dt);

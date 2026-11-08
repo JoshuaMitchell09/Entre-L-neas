@@ -151,6 +151,7 @@ export class Screens {
     for (const [k, l] of tabs) { const b = h('button', { class: 'tab', onclick: () => go(k) }, l); b.dataset.t = k; bar.append(b); }
     bar.append(h('div', { class: 'spacer' }),
       h('button', { class: 'btn small', onclick: () => g.resume() }, g.state === 'play' ? '▶ Reanudar (Esc)' : '← Volver'),
+      g.state === 'play' ? h('button', { class: 'btn small', onclick: () => { g.resume(); g.drone.enter(); } }, '🎥 Modo dron (K)') : null,
       g.arcade && g.state === 'play' ? h('button', { class: 'btn small', onclick: () => g.arcadeEnd() }, '⏹ Terminar partido') : null,
       h('button', { class: 'btn small danger', onclick: async () => { if (await this.ui.confirm(g.arcade ? 'Saldrás del partido arcade.' : g.inEvent ? 'Si salís ahora abandonarás el evento (−10 de reputación al liquidar). El progreso guardado se conserva.' : 'Volverás al menú principal. Se guardará automáticamente.', 'Salir al menú')) g.quitToMenu(); } }, 'Salir al menú'));
     const el = h('div', { class: 'screen tabs-screen' }, h('div', { class: 'tabs-wrap panel' }, bar, body));
