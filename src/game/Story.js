@@ -172,7 +172,7 @@ export class Story {
     if (g.photoMode.active) g.photoMode.exit();
     g.cinematic = true; g.ui.setPrompt(null);
     g.player.place(P.x, P.z, Math.PI / 2); g.player.setCameraEquipped(false);
-    g.camOverride = { pos: new THREE.Vector3(B.x - 1.35, 1.45, B.z + 0.9), look: new THREE.Vector3(B.x, B.y + 0.12, B.z - 0.1) };
+    g.camOverride = { pos: new THREE.Vector3(B.x - 0.95, 1.25, B.z + 0.55), look: new THREE.Vector3(B.x + 0.05, B.y + 0.08, B.z + 0.1) };
     const grp = new THREE.Group(); st.group.add(grp); this.props.push(grp);
     const M = (c, r = 0.5, m = 0.2) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m });
     const bag = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.34, 0.3), M(0x22333b, 0.85)); bag.position.set(B.x + 0.05, B.y + 0.17, B.z + 1.1); grp.add(bag);

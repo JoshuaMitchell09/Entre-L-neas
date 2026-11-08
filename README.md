@@ -111,6 +111,12 @@ Las grabaciones de estadio forman una lista: suenan en orden aleatorio, con fund
 
 El ambiente se mezcla con la intensidad del partido y se amortigua en pasillos y túnel; la música suena en el menú y en la Redacción. Usá solo audio propio o con permiso. La carpeta `public/audio` está excluida de Git para no subir archivos con derechos.
 
+### Preparación del equipo, horarios y nuevas sedes
+- **Zona de preparación** (pasillo, después de seguridad): dejás la mochila en la banca, sacás el cuerpo de cámara, elegís y montás el lente, insertás batería y tarjeta y podés cargar el perfil de deportes. Hasta entonces la cámara va guardada.
+- **Horario de cada cobertura** (en la Redacción): original, tarde, atardecer, noche o **ciclo real** (empieza 17:05 y anochece durante el partido). Sol, cielo, niebla, nubes y exposición cambian minuto a minuto; los focos, vallas LED, ventanas y faroles se encienden gradualmente.
+- **Sedes:** Estadio La Cueva (Tibás), **Estadio de Alajuela** (techos rojos con paneles solares, butacas rojinegras por bloques, torres de luz rayadas) y **Estadio de Cartago** (butacas azules con pasillos amarillos, estructura metálica azul, torres de celosía), además del Metropolitano Irazú.
+- **Física:** futbolistas con giros y aceleraciones limitadas, inclinación en curvas y mirada al balón; cámara con resorte amortiguado y visor con inercia según el peso del lente.
+
 ### Fotorrealismo y primera persona
 - Iluminación por mapa de entorno (IBL) generada desde el cielo físico o desde los focos nocturnos: reflejos coherentes en césped mojado, plásticos y metal.
 - Bóveda de nubes según el clima (despejado, nublado, lluvia) y tonos de atardecer; niebla atmosférica.

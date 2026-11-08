@@ -275,7 +275,7 @@ export class Game {
     if (!this.photoMode.active) {
       this.follow.update(dt, this.input, p, freeMove && (this.input.locked || this.input.pad));
       p.update(dt, this.input, this.follow.yaw, freeMove);
-      p.root.visible = !this.follow.firstPerson;
+      p.root.visible = !this.follow.firstPerson && !this.camOverride;
     } else {
       p.update(dt, this.input, this.photoMode.yaw, freeMove);
       this.photoMode.update(dt);

@@ -184,7 +184,7 @@ kbd { display: inline-block; min-width: 24px; padding: 2px 7px; margin-right: 6p
 .slider input { width: 100%; accent-color: var(--accent); }
 .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
 /* Diálogo */
-.dialogue { position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%); width: min(860px, 92vw); background: rgba(8,13,26,.94); border: 1px solid var(--line); border-radius: 14px; padding: 18px 22px 16px; display: flex; gap: 16px; animation: fadein .2s; pointer-events: auto; }
+.dialogue { position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%); width: min(860px, 92vw); background: rgba(8,13,26,.94); border: 1px solid var(--line); border-radius: 14px; padding: 18px 22px 16px; display: flex; gap: 16px; animation: dlgin .2s; pointer-events: auto; }
 .dialogue .portrait { width: 82px; height: 82px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-family: var(--cond); font-weight: 900; font-size: 34px; color: #fff; }
 .dialogue .who { font-family: var(--cond); font-weight: 800; letter-spacing: 1.5px; color: var(--accent); }
 .dialogue .role { color: var(--muted); font-size: 12px; margin-left: 8px; font-family: var(--font); letter-spacing: 0; font-weight: 400; }
@@ -216,3 +216,5 @@ select, input[type=text] { background: #0e1830; color: var(--text); border: 1px 
 
 /* Foco al navegar con control */
 .padfocus { outline: 3px solid var(--accent) !important; outline-offset: 2px; box-shadow: 0 0 18px rgba(242,197,0,.45) !important; }
+
+@keyframes dlgin { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
