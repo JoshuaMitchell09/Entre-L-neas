@@ -8,12 +8,14 @@
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview --host --port 4173",
-    "build:win": "node desktop/build.cjs"
+    "build:win": "node desktop/build.cjs",
+    "build:html": "vite build --config vite.single.config.js"
   },
   "dependencies": {
     "three": "0.170.0"
   },
   "devDependencies": {
-    "vite": "5.4.11"
+    "vite": "5.4.11",
+    "vite-plugin-singlefile": "^2.0.3"
   }
 }
