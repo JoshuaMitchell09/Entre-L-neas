@@ -153,7 +153,7 @@ export class DroneCam {
       const d = new Date(), stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}_${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}${String(d.getSeconds()).padStart(2, '0')}`;
       const a = document.createElement('a'); a.href = url; a.download = `EntreLineas_${stamp}.${ext}`; document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 60000);
-      g.ui.toast(`🎬 Video guardado: EntreLineas_${stamp}.${ext} (${(blob.size / 1048576).toFixed(1)} MB) en Descargas`, 'good', 6000);
+      g.ui.toast(`🎬 Video guardado: EntreLineas_${stamp}.${ext} (${(blob.size / 1048576).toFixed(1)} MB)`, 'good', 6000);
     };
     rec.start(1000); this.rec = rec; this.recStart = performance.now();
     g.ui.toast('● Grabando… (R para detener)', 'bad', 2000); this.renderUI();
