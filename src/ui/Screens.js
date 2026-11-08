@@ -261,6 +261,7 @@ export class Screens {
       h('div', {}, h('div', { class: 'h3' }, 'Gráficos'),
         row('Calidad', sel('quality', Object.keys(QUALITY_PRESETS).map((k) => [k, k[0].toUpperCase() + k.slice(1)]), () => g.applyQuality())),
         row('Escala de resolución', rng('resolutionScale', 0.5, 1.5, 0.05, () => g.applyQuality())),
+        row('Resolución dinámica (mantiene los FPS estables)', chk('dynRes', () => { g.dynScale = 1; g.resize(); })),
         row('Vista', sel('view', [['tercera', 'Tercera persona'], ['primera', 'Primera persona']], () => { g.follow.fpPitch = 0; g.follow.snap(g.player); })),
         row('Campo de visión (exploración)', rng('fov', 50, 85, 1)), row('Distancia de cámara', rng('cameraDistance', 1.8, 6, 0.1, () => { g.follow.dist = s.cameraDistance; })),
         row('Mostrar FPS', chk('showFps')),

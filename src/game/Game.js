@@ -69,7 +69,7 @@ export class Game {
   teamName(id) { return TEAMS[id]?.name || id; }
   resize() {
     const s = this.settings.data, q = this.settings.q;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2) * q.pixelRatio * s.resolutionScale);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2) * q.pixelRatio * s.resolutionScale * (this.dynScale ?? 1));
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
     this.camera.aspect = window.innerWidth / window.innerHeight; this.camera.updateProjectionMatrix();
     this.post?.resize(window.innerWidth, window.innerHeight, this.renderer.getPixelRatio());
@@ -299,12 +299,22 @@ export class Game {
     this.ui.toast(fp ? 'Vista en primera persona' : 'Vista en tercera persona', 'info', 1400);
   }
   // ---------------- Bucle ----------------
+  // Resolución dinámica: baja la resolución interna si los FPS caen y la sube cuando sobran
+  dynamicResolution(dt) {
+    if (!this.settings.data.dynRes || this.state !== 'play' || this.drone?.rec) { if (this.dynScale !== 1 && !this.drone?.rec) { this.dynScale = 1; this.resize(); } return; }
+    this.dynT = (this.dynT || 0) + dt; if (this.dynT < 1.5) return; this.dynT = 0;
+    const s = this.dynScale ?? 1, f = this.fps;
+    let n = s;
+    if (f < 45) n = Math.max(0.6, s - (f < 32 ? 0.15 : 0.08)); else if (f > 58 && s < 1) n = Math.min(1, s + 0.05);
+    if (Math.abs(n - s) > 0.001) { this.dynScale = n; this.resize(); }
+  }
   start() {
     let last = performance.now();
     const loop = (now) => {
       requestAnimationFrame(loop);
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
       this.fps = this.fps * 0.95 + (1 / Math.max(dt, 1e-3)) * 0.05;
+      this.dynamicResolution(dt);
       try { this.update(this.drone.active ? dt * this.drone.timeScale : dt); this.drone.update(); this.render(); } catch (e) { console.error(e); }
       this.input.endFrame();
     };
@@ -384,6 +394,9 @@ export class Game {
     this.ui.update(dt);
   }
   render() {
+    // Sombras: con poca holgura de FPS se recalculan cada dos cuadros (casi imperceptible y ahorra mucho)
+    const sm = this.renderer.shadowMap; sm.autoUpdate = false;
+    sm.needsUpdate = (this.frameN = (this.frameN || 0) + 1) % ((this.dynScale ?? 1) < 0.9 && this.settings.data.dynRes ? 2 : 1) === 0;
     if (this.state === 'boot' || this.state === 'loading') { this.renderer.render(this.scene, this.camera); return; }
     if (this.photoMode.active && !this.ui.screen) this.photoMode.pipeline.renderLive(this.scene, this.camera, this.photoMode.opticsState());
     else this.post.draw(this.camera);
