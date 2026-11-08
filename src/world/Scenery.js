@@ -10,7 +10,7 @@ export class Scenery {
     this.group = new THREE.Group(); game.scene.add(this.group);
     const rnd = seededRandom(1234);
     this.mountains(rnd);
-    this.valley(rnd, center, keepOut, game.env.time === 'night');
+    this.game = game; this.valley(rnd, center, keepOut, false);
   }
   mountains(rnd) {
     const seg = 220, R = 1500, pos = [], col = [], idx = [];
@@ -53,12 +53,12 @@ export class Scenery {
     trees.count = t;
     for (const m of [houses, roofs, trees]) { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; m.receiveShadow = false; m.castShadow = false; m.frustumCulled = false; this.group.add(m); }
     // Luces de la ciudad de noche
-    if (night) {
+    {
       const P = 1600, pos = new Float32Array(P * 3);
       for (let i = 0; i < P; i++) { const a = rnd() * Math.PI * 2, r = keepOut + 60 + rnd() * 1100; pos.set([center.x + Math.cos(a) * r, 2 + rnd() * 8, center.z + Math.sin(a) * r], i * 3); }
       const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
       const pts = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffd08a, size: 2.2, sizeAttenuation: false, fog: false }));
-      this.group.add(pts);
+      this.group.add(pts); this.game.env.register(pts, 'visible', 0, 1);
     }
   }
   dispose() { this.group.parent?.remove(this.group); }

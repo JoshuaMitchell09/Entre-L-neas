@@ -225,7 +225,7 @@ export class UI {
     this.navCD = Math.max(0, (this.navCD || 0) - dt);
     const confirmLayer = this.root.querySelector('.confirm-layer');
     const dlg = this.dlgEl.firstChild;
-    const root = confirmLayer || (dlg && dlg.querySelector('.opts') ? dlg : null) || this.screen;
+    const root = confirmLayer || (dlg && dlg.querySelector('.opts') ? dlg : null) || this.screen || this.customNavRoot;
     // Diálogo sin opciones: ✕ / ○ avanzan
     if (dlg && !dlg.querySelector('.opts') && !confirmLayer) {
       if (inp.padTriggerPressed(0) || inp.padTriggerPressed(1)) { this.dialogueNext?.(); inp.consumePad(); }

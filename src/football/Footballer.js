@@ -24,12 +24,26 @@ export class Footballer {
     this.root.traverse((o) => { if (o.isMesh) o.userData.footballer = this; });
   }
   place(x, z, yaw) { this.pos.set(x, 0, z); this.vel.set(0, 0, 0); this.yaw = yaw; this.sync(0); }
+  // Locomoción realista: la dirección gira con velocidad angular limitada (más lenta cuanto más rápido corre)
+  // y la rapidez cambia con aceleración/frenado acotados.
   moveToward(tx, tz, speed, dt, accel = 8) {
     const dx = tx - this.pos.x, dz = tz - this.pos.z, d = Math.hypot(dx, dz);
-    let desired = d > 0.25 ? Math.min(speed, d * 1.6) : 0;
-    const vx = d > 1e-3 ? (dx / d) * desired : 0, vz = d > 1e-3 ? (dz / d) * desired : 0;
-    const k = 1 - Math.exp(-accel * dt);
-    this.vel.x += (vx - this.vel.x) * k; this.vel.z += (vz - this.vel.z) * k;
+    const desired = d > 0.25 ? Math.min(speed, d * 1.4) : 0;
+    let sp = Math.hypot(this.vel.x, this.vel.z);
+    let dir = sp > 0.15 ? Math.atan2(this.vel.x, this.vel.z) : Math.atan2(dx, dz);
+    if (d > 1e-3) {
+      const want = Math.atan2(dx, dz); let diff = want - dir; while (diff > Math.PI) diff -= 2 * Math.PI; while (diff < -Math.PI) diff += 2 * Math.PI;
+      const maxTurn = (sp < 2 ? 12 : 9.5 - sp * 0.85) * (accel / 8) * dt;
+      // Giro muy cerrado a alta velocidad: frenar para cambiar de dirección
+      const sharp = Math.abs(diff) > 1.6 && sp > 3;
+      dir += Math.max(-Math.max(0.05, maxTurn), Math.min(Math.max(0.05, maxTurn), diff));
+      const target = sharp ? Math.min(desired, sp * 0.4) : desired;
+      const acc = target > sp ? (4.2 + accel * 0.25) * (1 - sp / (this.maxSpeed + 1.5)) + 1.2 : 7.5 + accel * 0.3;
+      sp += Math.max(-acc * dt, Math.min(acc * dt, target - sp));
+    } else sp = Math.max(0, sp - 8 * dt);
+    const prevSp = this.vel.length();
+    this.vel.set(Math.sin(dir) * sp, 0, Math.cos(dir) * sp);
+    this.accel = (sp - prevSp) / Math.max(dt, 1e-3);
     return d;
   }
   faceToward(x, z, dt, rate = 8) { this.yaw = dampAngle(this.yaw, Math.atan2(x - this.pos.x, z - this.pos.z), rate, dt); }
@@ -39,7 +53,14 @@ export class Footballer {
     const sp = Math.hypot(this.vel.x, this.vel.z);
     if (sp > 0.6 && this.lock <= 0 && this.mode !== 'fallen') this.yaw = dampAngle(this.yaw, Math.atan2(this.vel.x, this.vel.z), 9, dt);
   }
-  sync(dt) {
+  sync(dt, ballPos) {
+    // Inclinación en curvas y aceleración, mirada al balón
+    const prevYaw = this.prevYaw ?? this.yaw; let dy = this.yaw - prevYaw; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI;
+    this.prevYaw = this.yaw;
+    const spd = Math.hypot(this.vel.x, this.vel.z), turnRate = dt > 0 ? dy / dt : 0;
+    this.h.turnLean = (this.h.turnLean || 0) + ((-turnRate * spd * 0.022) - (this.h.turnLean || 0)) * Math.min(1, dt * 8);
+    this.h.accelLean = (this.h.accelLean || 0) + ((this.accel || 0) * 0.03 - (this.h.accelLean || 0)) * Math.min(1, dt * 6);
+    if (ballPos) { let la = Math.atan2(ballPos.x - this.pos.x, ballPos.z - this.pos.z) - this.yaw; while (la > Math.PI) la -= 2 * Math.PI; while (la < -Math.PI) la += 2 * Math.PI; const tgt = Math.max(-1.1, Math.min(1.1, la)) * 0.8; this.h.lookYaw += (tgt - this.h.lookYaw) * Math.min(1, dt * 5); }
     this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
     const sp = Math.hypot(this.vel.x, this.vel.z);
     if (this.lock > 0) { this.lock -= dt; if (this.lock <= 0 && ['kick', 'header', 'slide', 'throw', 'catch'].includes(this.anim)) { this.h.play(this.role === 'GK' ? 'gkReady' : 'loco'); this.anim = 'loco'; } }

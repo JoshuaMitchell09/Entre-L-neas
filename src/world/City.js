@@ -54,6 +54,7 @@ export class City {
     this.spots.crosswalk = new THREE.Vector3(0, 0, P + 10);
   }
   building(x, z, w, d, h, facing, shop, color) {
+    const env = this.game.env;
     // facing: +1 la fachada mira hacia +z ; -1 hacia -z
     const wallMat = new THREE.MeshStandardMaterial({ map: TX.paintedWallTexture(color, Math.floor(this.rnd() * 99), { band: TX.shade(color, -40) }), roughness: 0.9 });
     wallMat.map.repeat.set(w / 6, h / 5);
@@ -65,8 +66,8 @@ export class City {
     const eave = this.box(w + 0.6, 0.06, 1.6, roofM, x, h * 0.55 > 3.2 ? 3.2 : h * 0.55, z + facing * (d / 2 + 0.75)); eave.rotation.x = facing * 0.18;
     for (const s of [-1, 1]) this.box(0.08, 3.1, 0.08, stdMat('#333333', 0.5, 0.6), x + s * (w / 2 - 0.1), 1.55, z + facing * (d / 2 + 1.45), { cast: true });
     // Puerta y ventanas con verjas
-    const winTex = TX.windowTexture(this.night && this.rnd() > 0.3);
-    const winM = new THREE.MeshStandardMaterial({ map: winTex, roughness: 0.2, metalness: 0.2, emissive: this.night ? 0xffd28a : 0x000000, emissiveIntensity: this.night ? 0.4 : 0, emissiveMap: this.night ? winTex : null });
+    const winTex = TX.windowTexture(false), litTex = TX.windowTexture(true), lit = this.rnd() > 0.3;
+    const winM = new THREE.MeshStandardMaterial({ map: winTex, roughness: 0.2, metalness: 0.2, emissive: 0xffd28a, emissiveIntensity: 0, emissiveMap: litTex }); if (lit) env.register(winM, 'emissiveIntensity', 0, 0.45);
     const doorM = stdMat(TX.shade(color, -70), 0.6);
     const doorX = x + (this.rnd() - 0.5) * (w - 3);
     const door = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 2.4), shop ? new THREE.MeshStandardMaterial({ color: 0x2a2f33, roughness: 0.3, metalness: 0.5 }) : doorM);
@@ -78,7 +79,8 @@ export class City {
     }
     if (shop) {
       const [name, bg, fg] = shop;
-      const sign = new THREE.Mesh(new THREE.PlaneGeometry(Math.min(w - 0.6, 7), 0.9), new THREE.MeshStandardMaterial({ map: TX.signTexture(name, bg, fg, 768, 110, 'bold 60px Georgia, serif', fg), emissive: this.night ? 0xffffff : 0, emissiveIntensity: this.night ? 0.25 : 0, emissiveMap: null }));
+      const signM = new THREE.MeshStandardMaterial({ map: TX.signTexture(name, bg, fg, 768, 110, 'bold 60px Georgia, serif', fg), emissive: 0xffffff, emissiveIntensity: 0 }); signM.emissiveMap = signM.map; env.register(signM, 'emissiveIntensity', 0, 0.25);
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(Math.min(w - 0.6, 7), 0.9), signM);
       sign.position.set(x, 2.75, fz + facing * 0.04); if (facing < 0) sign.rotation.y = Math.PI; this.group.add(sign);
     }
     // Tanque/antena en el techo
@@ -190,13 +192,13 @@ export class City {
       this.group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), wireM));
     }
     // Faroles
-    const lampM = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffd9a0, emissiveIntensity: this.night ? 2.5 : 0 });
+    const lampM = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffd9a0, emissiveIntensity: 0 }); this.game.env.register(lampM, 'emissiveIntensity', 0, 2.5);
     for (let x = -150; x <= 150; x += 25) {
       const z = P + 3.6;
       this.box(0.15, 6, 0.15, stdMat('#3a3f44', 0.5, 0.7), x, 3, z); this.box(0.15, 0.1, 1.5, stdMat('#3a3f44', 0.5, 0.7), x, 6, z + 0.7);
       this.box(0.4, 0.15, 0.6, lampM, x, 5.9, z + 1.3);
       this.col.addCentered(x, z, 0.25, 0.25, 6);
-      if (this.night && Math.abs(x) < 80) { const l = new THREE.PointLight(0xffc98a, 30, 22, 1.6); l.position.set(x, 5.6, z + 1.3); this.group.add(l); }
+      if (Math.abs(x) < 30) { const l = new THREE.PointLight(0xffc98a, 0, 22, 1.6); l.position.set(x, 5.6, z + 1.3); this.group.add(l); this.game.env.register(l, 'intensity', 0, 30); }
     }
     // Árboles y palmeras
     for (let x = -150; x <= 150; x += 20) { if (Math.abs(x) < 60) continue; this.tree(x + 6, P + 1.6, 0.8); }
@@ -229,8 +231,8 @@ export class City {
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
       const w = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.24, 14), wheelM); w.rotation.x = Math.PI / 2; w.position.set(sx * L * 0.33, 0.34, sz * W / 2); g.add(w);
     }
-    const lightM = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff2cc, emissiveIntensity: this.night ? 3 : 0.3 });
-    const tailM = new THREE.MeshStandardMaterial({ color: 0x550000, emissive: 0xff2020, emissiveIntensity: this.night ? 2 : 0.2 });
+    const lightM = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff2cc, emissiveIntensity: 0.3 }); this.game.env.register(lightM, 'emissiveIntensity', 0.3, 3);
+    const tailM = new THREE.MeshStandardMaterial({ color: 0x550000, emissive: 0xff2020, emissiveIntensity: 0.2 }); this.game.env.register(tailM, 'emissiveIntensity', 0.2, 2);
     for (const sz of [-1, 1]) { this.box(0.05, 0.15, 0.3, lightM, L / 2, 0.6, sz * W * 0.35, { parent: g, cast: false }); this.box(0.05, 0.15, 0.3, tailM, -L / 2, 0.65, sz * W * 0.35, { parent: g, cast: false }); }
     g.userData.L = L;
     this.group.add(g); return g;

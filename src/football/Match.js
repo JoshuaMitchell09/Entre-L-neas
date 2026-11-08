@@ -159,8 +159,7 @@ export class Match {
       if (p.sentOff && p.mode !== 'leaving') continue;
       if (p.mode === 'fallen') { p.vel.multiplyScalar(0.8); p.fallenT -= dt; if (p.fallenT <= 0) { p.mode = 'play'; p.playAnim('getup', 0.9); } }
       p.integrate(dt);
-      // Separación simple entre jugadores
-      p.sync(dt);
+      p.sync(dt, this.ball.pos);
     }
     this.separate(dt);
     if (this.ball.owner) this.carryBall(dt);
@@ -342,7 +341,9 @@ export class Match {
     const p = this.ball.owner, b = this.ball;
     if (!p || p.sentOff) { b.owner = null; return; }
     const sp = Math.hypot(p.vel.x, p.vel.z);
-    const lead = p.role === 'GK' && p.anim === 'catch' ? 0.25 : 0.45 + sp * 0.06;
+    // Toques de conducción: el balón se adelanta y se vuelve a tocar en cada zancada
+    p.touch = ((p.touch || 0) + dt * (0.8 + sp * 0.28)) % 1;
+    const lead = p.role === 'GK' && p.anim === 'catch' ? 0.25 : 0.4 + sp * 0.05 + (sp > 2 ? Math.sin(p.touch * Math.PI) * (0.35 + sp * 0.06) : 0);
     const tx = p.pos.x + Math.sin(p.yaw) * lead, tz = p.pos.z + Math.cos(p.yaw) * lead;
     const ty = p.role === 'GK' && p.anim === 'catch' ? 1.0 : BALL_R + Math.abs(Math.sin(this.time * 9)) * 0.04 * Math.min(1, sp / 3);
     b.vel.set((tx - b.pos.x) / Math.max(dt, 1e-3) * 0.5 + p.vel.x * 0.5, 0, (tz - b.pos.z) / Math.max(dt, 1e-3) * 0.5 + p.vel.z * 0.5);

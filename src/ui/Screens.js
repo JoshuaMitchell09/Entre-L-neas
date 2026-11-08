@@ -15,7 +15,7 @@ import { AudioEngine } from '../audio/AudioEngine.js';
 const ICONS = { camera: '📷', lens: '🔭', card: '💾', battery: '🔋', accessory: '🧰', backpack: '🎒', credential: '🪪' };
 
 export class Screens {
-  constructor(game) { this.game = game; }
+  constructor(game) { this.game = game; this.timeChoice = {}; }
   get ui() { return this.game.ui; }
   // ================= MENÚ PRINCIPAL =================
   mainMenu() {
@@ -245,7 +245,11 @@ export class Screens {
             h('div', { class: 'teams', style: { margin: '6px 0' } }, this.ui.crest(g.team(e.home), 30), g.teamName(e.home), h('span', { class: 'muted' }, 'vs'), this.ui.crest(g.team(e.away), 30), g.teamName(e.away)),
             h('div', { style: { fontSize: '13px' } }, h('b', {}, 'Encargo: '), `${e.assignment.title} — ${e.assignment.desc}`),
             h('div', { style: { fontSize: '12px', marginTop: '4px' } }, h('span', { class: 'pill' }, `Pago ×${(e.mult * c.payMult).toFixed(2)}`), e.done ? h('span', { class: 'pill on' }, 'Cubierto') : null, e.locked ? h('span', { class: 'pill r' }, e.clasico && c.reputation >= e.minRep ? 'Requiere contrato de planta o reputación 55' : `Requiere reputación ${e.minRep}`) : null)),
-          h('button', { class: 'btn ' + (!e.locked ? 'primary' : ''), disabled: e.locked ? true : null, onclick: () => g.startEvent(e) }, e.done ? 'Repetir' : 'Cubrir')));
+          h('div', { style: { display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'stretch' } },
+            (() => { const sel = h('select', { title: 'Horario', onchange: (ev) => { this.timeChoice[e.id] = ev.target.value; } },
+              h('option', { value: '' }, `Horario: ${TIME_PRESETS[e.time].label}`), ...Object.entries(TIME_PRESETS).filter(([k]) => k !== e.time).map(([k, v]) => h('option', { value: k, selected: this.timeChoice[e.id] === k ? true : null }, v.label)));
+              return sel; })(),
+            h('button', { class: 'btn ' + (!e.locked ? 'primary' : ''), disabled: e.locked ? true : null, onclick: () => { const t = this.timeChoice[e.id]; g.startEvent(t ? { ...e, time: t, kickoff: TIME_PRESETS[t].kickoff } : e); } }, e.done ? 'Repetir' : 'Cubrir'))));
       }
       // Panel derecho: perfil, contratos, tienda
       right.append(h('div', { class: 'card' }, h('div', { class: 'h3' }, g.playerName), h('div', {}, c.title), h('div', { class: 'repbar', style: { margin: '8px 0' } }, h('i', { style: { width: c.reputation + '%' } })),

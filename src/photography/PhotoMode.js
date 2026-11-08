@@ -30,6 +30,7 @@ export class PhotoMode {
     if (g.inventory.batteryCharge <= 0) { g.ui.toast('Batería agotada. Cambiala con B si tenés repuesto.', 'warn'); return false; }
     this.active = true; p.inViewfinder = true; p.root.visible = false;
     this.yaw = g.follow.yaw; this.pitch = g.follow.firstPerson ? g.follow.fpPitch : -g.follow.pitch * 0.4; this.prevYaw = this.yaw; this.prevPitch = this.pitch;
+    this.tYaw = this.yaw; this.tPitch = this.pitch; this.vYaw = 0; this.vPitch = 0; this.kick = 0;
     this.clampFocal(); this.clampAperture();
     g.audio?.ui('viewfinder');
     g.events.emit('photo:enter');
@@ -85,7 +86,15 @@ export class PhotoMode {
     // Mirar (sensibilidad proporcional al campo de visión para que el teleobjetivo sea manejable)
     const look = inp.lookDelta(dt);
     const k = clamp(this.vfov / 40, 0.05, 1.2);
-    this.yaw -= look.dx * k; this.pitch = clamp(this.pitch - look.dy * k, -1.2, 1.2);
+    // Inercia del equipo: la orientación sigue al pulso con un resorte cuya rigidez depende del peso del lente
+    if (this.tYaw === undefined) { this.tYaw = this.yaw; this.tPitch = this.pitch; this.vYaw = 0; this.vPitch = 0; }
+    this.tYaw -= look.dx * k; this.tPitch = clamp(this.tPitch - look.dy * k, -1.2, 1.2);
+    const w = 30 / (1 + this.lens.weight * 0.55 + (this.game.inventory.has('monopod') ? 0.3 : 0));
+    const sYaw = (this.tYaw - this.yaw) * w * w - 2 * w * this.vYaw, sPitch = (this.tPitch - this.pitch) * w * w - 2 * w * this.vPitch;
+    this.vYaw += sYaw * dt; this.vPitch += sPitch * dt;
+    this.yaw += this.vYaw * dt; this.pitch = clamp(this.pitch + this.vPitch * dt, -1.25, 1.25);
+    // Golpe del espejo/obturador
+    if (this.kick > 0) { this.pitch += this.kick * dt * 6; this.kick = Math.max(0, this.kick - dt * 0.6); }
     // Zoom
     if (inp.mouse.wheel || inp.wasPressed('zoomIn') || inp.wasPressed('zoomOut') || (inp.padAxes && Math.abs(inp.padTrigger(7) - inp.padTrigger(6)) > 0.9 && false)) {
       const dir = inp.mouse.wheel ? -inp.mouse.wheel : inp.wasPressed('zoomIn') ? 1 : -1;
@@ -110,6 +119,9 @@ export class PhotoMode {
     this.swayT += dt;
     const sw = this.shakeRate() * 0.09;
     this.sway.set(Math.sin(this.swayT * 1.3) * 0.6 + Math.sin(this.swayT * 3.7) * 0.4, Math.sin(this.swayT * 1.1 + 1) * 0.5 + Math.sin(this.swayT * 2.9) * 0.3).multiplyScalar(sw);
+    // Pasos con el visor arriba: el cuadro rebota al ritmo de la marcha
+    const ps = this.game.player.speed;
+    if (ps > 0.3) { this.stepT = (this.stepT || 0) + dt * (1.8 + ps * 0.9) * Math.PI; this.sway.x += Math.sin(this.stepT) * 0.0016 * ps; this.sway.y += Math.abs(Math.cos(this.stepT)) * 0.0022 * ps; }
     // Velocidad angular (para paneo y desenfoque)
     const yawRate = -(this.yaw - this.prevYaw) / Math.max(dt, 1e-4), pitchRate = -(this.pitch - this.prevPitch) / Math.max(dt, 1e-4);
     this.angVel.x = damp(this.angVel.x, yawRate, 18, dt); this.angVel.y = damp(this.angVel.y, pitchRate, 18, dt);
@@ -208,6 +220,7 @@ export class PhotoMode {
     if (g.rules && !g.rules.canShoot()) return;
     this.bufferUsed++; inv.drainBattery(1); inv.cardUsed++;
     g.audio?.shutter(this.cam.sound); g.input.rumble(0.05, 0.35, 45);
+    this.kick = ({ basic: 0.0035, sport: 0.0022, pro: 0.0012, flagship: 0.0004 }[this.cam.sound] || 0.002) / (1 + this.lens.weight * 0.5);
     this.blackout = this.cam.sound === 'flagship' ? 0.02 : this.cam.sound === 'basic' ? 0.09 : 0.05;
     this.capture();
   }

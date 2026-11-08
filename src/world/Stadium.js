@@ -87,7 +87,7 @@ export class Stadium {
     const { L } = PITCH;
     const boardH = 0.9, mkBoard = (len, x, z, ry, ad) => {
       const tex = TX.adTexture(...ad);
-      const front = new THREE.MeshStandardMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: this.game.env.time === 'night' ? 0.55 : 0.12, roughness: 0.6 });
+      const front = new THREE.MeshStandardMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.12, roughness: 0.6 }); this.game.env.register(front, 'emissiveIntensity', 0.12, 0.55);
       const mats = [this.m.darkSteel, this.m.darkSteel, this.m.darkSteel, this.m.darkSteel, front, this.m.darkSteel];
       const b = new THREE.Mesh(new THREE.BoxGeometry(len, boardH, 0.25), mats);
       b.position.set(x, boardH / 2, z); b.rotation.y = ry; b.castShadow = true; b.receiveShadow = true; this.group.add(b);
@@ -214,7 +214,7 @@ export class Stadium {
     const d = new THREE.Object3D(), c = new THREE.Color();
     seatPos.forEach(([x, y, z, row], i) => {
       d.position.set(x, y, z); d.updateMatrix(); seatMesh.setMatrixAt(i, d.matrix);
-      const pat = (row % 6 < 3) !== (Math.floor((x + 200) / 12) % 2 === 0);
+      const pat = this.cfg.seatPattern === 'blocks' ? Math.floor((x + len / 2) / (this.cfg.aisleEvery || 9)) % 2 === 0 : this.cfg.seatPattern === 'solid' ? true : (row % 6 < 3) !== (Math.floor((x + 200) / 12) % 2 === 0);
       c.set(this.cfg.seatColors[pat ? 0 : 1]); seatMesh.setColorAt(i, c);
     });
     seatMesh.receiveShadow = true; grp.add(seatMesh);
@@ -237,8 +237,8 @@ export class Stadium {
     this.stands = {
       near: this.stand(cfg.nearRows, nearLen, cfg.rowDepth, cfg.rowHeight, { cutout: { x0: -3.35, x1: 3.35, maxTop: 4.4 }, crowdSeats: seats, rotY: 0, origin: new THREE.Vector3(0, 0, APRON_Z), tier: cfg.tiers?.near, banner: cfg.banners?.near }),
       far: this.stand(cfg.farRows, 2 * APRON_X + (cfg.corners ? 2 * this.D.end : 0), cfg.rowDepth, cfg.rowHeight, { crowdSeats: seats, rotY: Math.PI, origin: new THREE.Vector3(0, 0, -APRON_Z), tier: cfg.tiers?.far, banner: cfg.banners?.far }),
-      east: this.stand(cfg.endRows, endLen, cfg.rowDepth, cfg.rowHeight, { crowdSeats: seats, rotY: Math.PI / 2, origin: new THREE.Vector3(APRON_X, 0, 0) }),
-      west: this.stand(cfg.endRows, endLen, cfg.rowDepth, cfg.rowHeight, { crowdSeats: seats, rotY: -Math.PI / 2, origin: new THREE.Vector3(-APRON_X, 0, 0) }),
+      east: this.stand(cfg.eastRows || cfg.endRows, endLen, cfg.rowDepth, cfg.rowHeight, { crowdSeats: seats, rotY: Math.PI / 2, origin: new THREE.Vector3(APRON_X, 0, 0), tier: cfg.tiers?.east, banner: cfg.banners?.east }),
+      west: this.stand(cfg.westRows || cfg.endRows, endLen, cfg.rowDepth, cfg.rowHeight, { crowdSeats: seats, rotY: -Math.PI / 2, origin: new THREE.Vector3(-APRON_X, 0, 0), tier: cfg.tiers?.west, banner: cfg.banners?.west }),
     };
     // Colisiones: frentes de gradería (el jugador no puede subir) — lado cercano con hueco del túnel
     const wall = 0.6;
@@ -284,10 +284,11 @@ export class Stadium {
     const cfg = this.cfg; const st = this.stands;
     const roofM = new THREE.MeshStandardMaterial({ color: 0xd8dde2, roughness: 0.6, metalness: 0.4, side: THREE.DoubleSide });
     const trussM = stdMat('#eef1f4', 0.45, 0.6);
-    const addRoof = (len, D, topY, rotY, origin, truss = false) => {
+    const addRoof = (len, D, topY, rotY, origin, truss = false, o = {}) => {
       const grp = new THREE.Group(); grp.rotation.y = rotY; grp.position.copy(origin); this.group.add(grp);
       const y = topY + 4.5;
-      const r = new THREE.Mesh(new THREE.BoxGeometry(len, 0.3, D + 4), roofM); r.position.set(0, y, D / 2 - 1.5); r.rotation.x = -0.08; r.castShadow = true; r.receiveShadow = true; grp.add(r);
+      const rm = o.color ? new THREE.MeshStandardMaterial({ color: o.color, roughness: 0.55, metalness: 0.35, side: THREE.DoubleSide }) : roofM;
+      const r = new THREE.Mesh(new THREE.BoxGeometry(len, 0.3, D + 4), rm); r.position.set(0, y, D / 2 - 1.5); r.rotation.x = -0.08; r.castShadow = true; r.receiveShadow = true; grp.add(r);
       if (truss) {
         // Cerchas blancas sobre el techo (estructura triangulada visible)
         const H = 3.2, depth = D + 4, z0 = D / 2 - 1.5;
@@ -303,23 +304,44 @@ export class Stadium {
         }
         for (const zz of [z0 - depth / 2 + 0.2, z0 + depth / 2 - 0.2]) { const rail = new THREE.Mesh(new THREE.BoxGeometry(len, 0.25, 0.25), trussM); rail.position.set(0, y + H, zz); grp.add(rail); }
       }
-      for (let x = -len / 2 + 4; x <= len / 2 - 4; x += 16) {
-        const col = new THREE.Mesh(new THREE.BoxGeometry(0.5, y + 0.5, 0.5), this.m.steel); col.position.set(x, (y + 0.5) / 2, D + 0.6); col.castShadow = true; grp.add(col);
-        const truss = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.6, D + 4), this.m.steel); truss.position.set(x, y - 0.35, D / 2 - 1.5); truss.rotation.x = -0.08; grp.add(truss);
+      if (o.solar) { // paneles solares sobre el techo
+        const pm = new THREE.MeshStandardMaterial({ color: 0x1b2a4a, roughness: 0.25, metalness: 0.6 });
+        for (let x = -len / 2 + 3; x < len / 2 - 3; x += 2.1) for (let zz = -D / 2; zz < D / 2 - 1; zz += 1.25) {
+          if (Math.floor((x + len / 2) / 26) % 3 === 2) continue;
+          const pn = new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.06, 1.1), pm); pn.position.set(x, 0.19, zz); r.add(pn);
+        }
       }
+      if (o.fascia) { // banda frontal y trasera con letreros
+        const fm = stdMat(o.fasciaColor || '#1a1a1a', 0.6);
+        for (const [zz, txt, face] of [[-3.5, o.fascia, Math.PI], [D + 0.55, o.backText || o.fascia, 0]]) {
+          const b = new THREE.Mesh(new THREE.BoxGeometry(len, 1.8, 0.25), fm); b.position.set(0, y - 0.45, zz); grp.add(b);
+          const t = new THREE.Mesh(new THREE.PlaneGeometry(Math.min(len * 0.6, 60), 1.4), new THREE.MeshStandardMaterial({ map: TX.signTexture(txt, o.fasciaColor || '#1a1a1a', '#ffffff', 2048, 96, 'bold 64px Arial'), roughness: 0.7 }));
+          t.position.set(0, y - 0.45, zz + (face ? -0.14 : 0.14)); t.rotation.y = face; grp.add(t);
+        }
+      }
+      const beamM = o.beam ? stdMat(o.beam, 0.5, 0.5) : this.m.steel;
+      for (let x = -len / 2 + 4; x <= len / 2 - 4; x += o.beamStep || 16) {
+        const col = new THREE.Mesh(new THREE.BoxGeometry(0.5, y + 0.5, 0.5), beamM); col.position.set(x, (y + 0.5) / 2, D + 0.6); col.castShadow = true; grp.add(col);
+        const truss = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.6, D + 4), beamM); truss.position.set(x, y - 0.35, D / 2 - 1.5); truss.rotation.x = -0.08; grp.add(truss);
+        if (o.beam) { // diagonales visibles bajo el techo (estructura metálica)
+          for (const k of [0.25, 0.6]) { const zz = -3.5 + (D + 4) * k, dg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, Math.hypot(4, D * 0.35)), beamM); dg.position.set(x, y - 2.2, zz); dg.rotation.x = Math.atan2(4, D * 0.35); grp.add(dg); }
+        }
+      }
+      if (o.edge) { const e = new THREE.Mesh(new THREE.BoxGeometry(len, 0.35, 0.35), stdMat(o.edge, 0.5, 0.4)); e.position.set(0, y + 0.25, -3.5); grp.add(e); }
       return { grp, y };
     };
     const nearLen = 2 * APRON_X + (cfg.corners ? 2 * this.D.end : 0);
-    const truss = cfg.roof === 'sides';
-    const nr = addRoof(nearLen, this.D.near, st.near.topY, 0, new THREE.Vector3(0, 0, APRON_Z), truss);
+    const truss = cfg.roof === 'sides' && !cfg.roofSpec;
+    const RS = cfg.roofSpec || {};
+    const nr = addRoof(nearLen, this.D.near, st.near.topY, 0, new THREE.Vector3(0, 0, APRON_Z), truss, RS.near || {});
     this.roofY = { near: nr.y };
-    if (truss) this.roofY.far = addRoof(2 * APRON_X, this.D.far, st.far.topY, Math.PI, new THREE.Vector3(0, 0, -APRON_Z), true).y;
+    if (truss || RS.far) this.roofY.far = addRoof(2 * APRON_X, this.D.far, st.far.topY, Math.PI, new THREE.Vector3(0, 0, -APRON_Z), truss, RS.far || {}).y;
     // Cabinas de prensa (arriba de la gradería principal)
     const cab = new THREE.Group(); nr.grp.add(cab);
     for (let i = -4; i <= 4; i++) {
       const x = i * 4.2, z = this.D.near - 1.6, y = st.near.topY + 0.2;
       const b = new THREE.Mesh(new THREE.BoxGeometry(4, 2.4, 3), this.m.concreteDark); b.position.set(x, y + 1.2, z + 0.3); cab.add(b);
-      const gl = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1.4), new THREE.MeshStandardMaterial({ color: 0x223344, emissive: 0xffe6b0, emissiveIntensity: this.game.env.time === 'night' ? 0.8 : 0.15, roughness: 0.1, metalness: 0.5 }));
+      const gl = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1.4), new THREE.MeshStandardMaterial({ color: 0x223344, emissive: 0xffe6b0, emissiveIntensity: 0.15, roughness: 0.1, metalness: 0.5 })); this.game.env.register(gl.material, 'emissiveIntensity', 0.15, 0.8);
       gl.position.set(x, y + 1.4, z - 1.21); gl.rotation.y = Math.PI; cab.add(gl);
     }
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(14, 1.2), new THREE.MeshBasicMaterial({ map: TX.signTexture('PRENSA · TRIBUNA', '#0b3d91', '#ffffff', 1024, 90, 'bold 60px Arial') }));
@@ -330,17 +352,27 @@ export class Stadium {
       addRoof(2 * APRON_Z, this.D.end, st.west.topY, -Math.PI / 2, new THREE.Vector3(-APRON_X, 0, 0));
     }
     // Iluminación de estadio
-    const lampM = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff4e0, emissiveIntensity: this.game.env.time === 'night' ? 3 : (this.game.env.time === 'sunset' || this.game.env.weather === 'rain' ? 1.5 : 0.1) });
-    const glow = new THREE.SpriteMaterial({ map: TX.glowSprite('#fff2d8'), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: this.game.env.time === 'night' ? 0.9 : this.game.env.time === 'sunset' ? 0.45 : 0.0, fog: false });
+    const lampM = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff4e0, emissiveIntensity: 0.1 }); this.game.env.register(lampM, 'emissiveIntensity', 0.1, 3, 'flood');
+    const glow = new THREE.SpriteMaterial({ map: TX.glowSprite('#fff2d8'), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0, fog: false }); this.game.env.register(glow, 'opacity', 0, 0.9, 'flood');
     if (cfg.lights === 'towers') {
       const ox = APRON_X + this.D.end * 0.6 + 4, oz = APRON_Z + this.D.near * 0.5 + 4, H = Math.max(36, st.near.topY + 22);
       for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
         const x = sx * ox, z = sz * (sz > 0 ? oz : APRON_Z + this.D.far * 0.5 + 4);
-        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.9, H, 10), this.m.steel); pole.position.set(x, H / 2, z); pole.castShadow = true; this.group.add(pole);
+        if (cfg.towerStyle === 'lattice') { // torre de celosía (cuatro patas + arriostramiento)
+          const lm = stdMat('#8a8f95', 0.5, 0.7), b0 = 2.6, b1 = 0.9;
+          const legs = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+          for (const [a, c] of legs) { const lg = new THREE.Mesh(new THREE.BoxGeometry(0.22, H, 0.22), lm); lg.position.set(x + a * (b0 + b1) / 2, H / 2, z + c * (b0 + b1) / 2); lg.rotation.set(-c * Math.atan((b0 - b1) / H), 0, a * Math.atan((b0 - b1) / H)); this.group.add(lg); }
+          for (let yy = 3; yy < H - 1; yy += 3.2) { const w = b0 - (b0 - b1) * (yy / H); for (const [ox2, oz2, ry] of [[0, -w, 0], [0, w, 0], [-w, 0, Math.PI / 2], [w, 0, Math.PI / 2]]) { const br = new THREE.Mesh(new THREE.BoxGeometry(2 * w * 1.15, 0.1, 0.1), lm); br.position.set(x + ox2, yy, z + oz2); br.rotation.set(0, ry, ((yy / 3.2) % 2 ? 0.55 : -0.55)); this.group.add(br); } }
+        } else {
+          const poleM = cfg.towerStyle === 'striped' ? new THREE.MeshStandardMaterial({ map: (() => { const t = TX.fabricTexture('#c8102e', null).clone(); const c = TX.makeCanvas(32, 256), g2 = c.getContext('2d'); for (let i = 0; i < 8; i++) { g2.fillStyle = i % 2 ? '#f4f4f4' : '#c8102e'; g2.fillRect(0, i * 32, 32, 32); } return TX.toTex(c, { repeat: [1, 1] }); })(), roughness: 0.5, metalness: 0.3 }) : this.m.steel;
+          const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.9, H, 10), poleM); pole.position.set(x, H / 2, z); pole.castShadow = true; this.group.add(pole);
+        }
         const head = new THREE.Group(); head.position.set(x, H + 2, z); head.lookAt(0, 0, 0); this.group.add(head);
-        const frame = new THREE.Mesh(new THREE.BoxGeometry(8, 5, 0.4), this.m.darkSteel); head.add(frame);
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(8, 5, 0.4), cfg.towerStyle === 'lattice' ? stdMat('#8a8f95', 0.5, 0.7) : this.m.darkSteel); head.add(frame);
         for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) {
-          const l = new THREE.Mesh(new THREE.CircleGeometry(0.55, 12), lampM); l.position.set(-2.9 + i * 1.95, -1.6 + j * 1.6, 0.21); head.add(l);
+          const l = new THREE.Mesh(cfg.towerStyle === 'lattice' ? new THREE.SphereGeometry(0.6, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2) : new THREE.CircleGeometry(0.55, 12), lampM);
+          if (cfg.towerStyle === 'lattice') l.rotation.x = Math.PI / 2;
+          l.position.set(-2.9 + i * 1.95, -1.6 + j * 1.6, 0.21); head.add(l);
         }
         const sp = new THREE.Sprite(glow); sp.scale.set(26, 26, 1); sp.position.copy(head.position); this.group.add(sp);
         this.lightPositions.push(new THREE.Vector3(x, H + 2, z));
@@ -448,6 +480,17 @@ export class Stadium {
     const tv = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 1.8), new THREE.MeshBasicMaterial({ map: TX.signTexture('ASCENSO TOTAL\nEN VIVO', '#0b3d91', '#ffffff', 512, 288, 'bold 40px Arial') }));
     tv.position.set(px0 + 0.2, 2, (pz0 + pz1) / 2); tv.rotation.y = Math.PI / 2; this.group.add(tv);
     const pl = new THREE.PointLight(0xfff1dc, 16, 16, 1.6); pl.position.set(-18, H - 0.3, (pz0 + pz1) / 2); this.group.add(pl);
+    // Zona de preparación de prensa (pared este del pasillo): banca, casilleros y letrero
+    {
+      const bz = (z0 + z1) / 2, lockerM = stdMat('#3d5a80', 0.45, 0.5), benchM = new THREE.MeshStandardMaterial({ map: TX.woodTexture(), roughness: 0.6 });
+      for (let k = -3; k <= 3; k++) { const lk = this.box(0.5, 2.0, 0.95, lockerM, x1 - 0.45, 1.0, bz + k * 1.0); const hd = this.box(0.04, 0.18, 0.05, this.m.steel, x1 - 0.72, 1.1, bz + k * 1.0 + 0.3, { cast: false }); }
+      this.col.addCentered(x1 - 0.45, bz, 0.6, 7, 2.0);
+      this.box(0.8, 0.07, 3.6, benchM, x1 - 2.1, 0.48, bz); for (const zz of [-1.5, 1.5]) this.box(0.6, 0.45, 0.08, this.m.darkSteel, x1 - 2.1, 0.23, bz + zz);
+      this.col.addCentered(x1 - 2.1, bz, 0.8, 3.6, 0.52, 0, 'nostand');
+      const ps2 = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 0.45), new THREE.MeshBasicMaterial({ map: TX.signTexture('PREPARACIÓN · PRENSA', '#0b3d91', '#ffffff', 512, 72, 'bold 40px Arial') }));
+      ps2.position.set(x1 - 0.17, 2.45, bz); ps2.rotation.y = -Math.PI / 2; this.group.add(ps2);
+      this.spots.prepBench = new THREE.Vector3(x1 - 2.1, 0.52, bz); this.spots.prepStand = new THREE.Vector3(x1 - 3.3, 0, bz);
+    }
     this.spots.laptop = new THREE.Vector3(-18, 0, pz0 + 2 - 0.9);
     this.spots.pressRoom = new THREE.Vector3(-14, 0, doorZ);
     this.spots.tunnelMouth = new THREE.Vector3(0, 0, APRON_Z - 1.5);
@@ -467,6 +510,20 @@ export class Stadium {
     this.box(4, facH - 3, 0.6, this.m.facade, 0, 3 + (facH - 3) / 2, gz); this.col.add(-2.1, 3, gz - 0.3, 2.1, facH, gz + 0.3, 'nostand');
     // Laterales de la fachada que cierran el recinto
     for (const s of [-1, 1]) { this.box(0.6, facH, gz + 10, this.m.facade, s * facLen / 2, facH / 2, gz / 2 - 5); this.col.addCentered(s * facLen / 2, gz / 2 - 5, 0.6, gz + 10, facH); }
+    if (cfg.facadeText) {
+      const w = Math.min(90, facLen * 0.6);
+      const sg = new THREE.Mesh(new THREE.PlaneGeometry(w, 4.2), new THREE.MeshStandardMaterial({ map: TX.signTexture(cfg.facadeText, cfg.facade, '#ffffff', 2048, 96, '900 66px Arial Black, Arial'), roughness: 0.7, emissive: 0xffffff, emissiveIntensity: 0.12 }));
+      sg.material.emissiveMap = sg.material.map; sg.position.set(-6, facH - 3.2, gz + 0.34); this.group.add(sg);
+      this.box(facLen, 3.2, 0.62, stdMat(cfg.facadeBand || '#c8102e', 0.7), 0, 1.6, gz + 0.02, { cast: false });
+    }
+    if (cfg.brickCorners) {
+      const bm = new THREE.MeshStandardMaterial({ map: TX.brickTexture([6, 2]), roughness: 0.85 });
+      for (const sx of [-1, 1]) {
+        const cy = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 4.6, 24, 1, false, -Math.PI / 2, Math.PI), bm); cy.position.set(sx * 34, 2.3, gz + 0.3); cy.castShadow = true; this.group.add(cy);
+        const roofC = new THREE.Mesh(new THREE.CylinderGeometry(6.2, 6.2, 0.3, 24, 1, false, -Math.PI / 2, Math.PI), stdMat(cfg.facadeBand || '#c8102e', 0.6)); roofC.position.set(sx * 34, 4.75, gz + 0.3); this.group.add(roofC);
+        this.col.addCentered(sx * 34, gz + 3.2, 12, 6, 4.6);
+      }
+    }
     if (cfg.facadeLetters) {
       const letters = [...cfg.facadeLetters], pw = 7.4, gap = 1.1, total = letters.length * (pw + gap);
       for (let i = 0; i < letters.length; i++) {

@@ -3,6 +3,7 @@ export const MISSION_DEFS = {
   m_acred: { title: 'Recogé tu acreditación', desc: 'Buscá el puesto de prensa en la plaza del estadio y hablá con Mariana.', kind: 'story', target: 1, trigger: 'story:credential', reward: { rep: 1 } },
   m_llegar: { title: 'Llegá al estadio', desc: 'Caminá hasta el acceso de prensa del estadio.', kind: 'story', target: 1, trigger: 'story:gate', reward: {} },
   m_seguridad: { title: 'Pasá el control de seguridad', desc: 'Presentá tu acreditación al guardia y pasá la mochila por el escáner.', kind: 'story', target: 1, trigger: 'story:security', reward: {} },
+  m_preparar: { title: 'Prepará tu equipo', desc: 'En la zona de preparación del pasillo: dejá la mochila, montá el lente, batería y tarjeta.', kind: 'story', target: 1, trigger: 'story:prepared', reward: {} },
   m_cancha: { title: 'Encontrá a Don Álvaro', desc: 'Atravesá el túnel y buscalo en la zona de prensa detrás de la portería este.', kind: 'story', target: 1, trigger: 'story:alvaro', reward: { rep: 1 } },
   m_calentamiento: { title: 'Primera cobertura', desc: 'Capturá 5 fotografías del calentamiento (calidad mínima 35).', kind: 'event', target: 5, photo: { tags: ['calentamiento'], min: 35 }, reward: { money: 10000, rep: 2 } },
   m_entrega: { title: 'Tu primera entrega', desc: 'Entregá al editor al menos una fotografía válida (40 o más).', kind: 'story', target: 1, trigger: 'delivery:valid', reward: { money: 5000, rep: 2 } },
@@ -18,10 +19,10 @@ export class MissionSystem {
   constructor(game) {
     this.game = game; this.active = []; this.done = [];
     game.events.on('photo:taken', (rec) => this.onPhoto(rec));
-    for (const t of ['story:credential', 'story:gate', 'story:security', 'story:alvaro', 'delivery:valid']) game.events.on(t, () => this.onTrigger(t));
+    for (const t of ['story:credential', 'story:gate', 'story:security', 'story:prepared', 'story:alvaro', 'delivery:valid']) game.events.on(t, () => this.onTrigger(t));
   }
   add(id) {
-    if (this.active.some((m) => m.id === id) || (this.done.includes(id) && MISSION_DEFS[id].kind === 'story' && !['m_acred', 'm_llegar', 'm_seguridad', 'm_cancha'].includes(id))) return;
+    if (this.active.some((m) => m.id === id) || (this.done.includes(id) && MISSION_DEFS[id].kind === 'story' && !['m_acred', 'm_llegar', 'm_seguridad', 'm_preparar', 'm_cancha'].includes(id))) return;
     const d = MISSION_DEFS[id]; if (!d) return;
     const m = { id, ...d, progress: 0, status: 'active' };
     this.active.push(m); this.game.events.emit('mission:added', m);

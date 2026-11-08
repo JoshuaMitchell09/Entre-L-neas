@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { NPC, LOOKS, randomFan } from '../npc/NPC.js';
 import { formatClock, rand, pick } from '../core/MathUtil.js';
 import { STADIUMS } from '../world/StadiumConfigs.js';
+import { ALL_ITEMS } from '../photography/Equipment.js';
 
 const ALVARO_TIPS = [
   'Seguí la jugada, no el balón. Cuando un extremo encara por la banda, ya deberías estar apuntando al área.',
@@ -64,6 +65,8 @@ export class Story {
     I.add({ position: this.mariana.pos.clone().setY(1.2).add(new THREE.Vector3(0, 0, 2)), radius: 3.2, prompt: () => `<kbd>${g.ui.key('interact')}</kbd>Hablar con Mariana`, onInteract: () => this.talkMariana() });
     I.add({ position: st.spots.guard.clone().setY(1.2), radius: 3.5, prompt: () => this.stage === 'street' || this.stage === 'credential' ? `<kbd>${g.ui.key('interact')}</kbd>Presentarse en seguridad` : null, onInteract: () => this.security() });
     I.add({ getPosition: () => this.alvaro.pos.clone().setY(1), position: this.alvaro.pos, radius: 3, prompt: () => `<kbd>${g.ui.key('interact')}</kbd>Hablar con Don Álvaro`, onInteract: () => this.talkAlvaro() });
+    g.inventory.prepared = false;
+    I.add({ position: st.spots.prepBench.clone().setY(1), radius: 2.6, prompt: () => (!g.inventory.prepared && ['inside', 'field'].includes(this.stage) ? `<kbd>${g.ui.key('interact')}</kbd>Preparar equipo` : null), onInteract: () => this.prepare() });
     I.add({ position: st.pressDoor.center, radius: 2.4, prompt: () => (st.pressDoor.isOpen ? null : `<kbd>${g.ui.key('interact')}</kbd>Abrir: Sala de prensa`), onInteract: () => {
       if (!g.inventory.credential) { g.ui.toast('Acceso restringido: se requiere acreditación de prensa.', 'warn'); g.audio?.ui('error'); return; }
       st.pressDoor.open(); g.audio?.ui('door'); g.ui.toast('Tu acreditación abre la sala de prensa.', 'good');
@@ -87,7 +90,7 @@ export class Story {
     const T = {
       street: 'Recogé tu acreditación en el toldo azul de prensa (plaza del estadio).',
       credential: 'Andá al acceso de prensa del estadio y pasá el control de seguridad.',
-      inside: `Cruzá el túnel y buscá a Don Álvaro detrás de la portería este. Saque inicial: ${ko}.`,
+      inside: g.inventory.prepared ? `Cruzá el túnel y buscá a Don Álvaro detrás de la portería este. Saque inicial: ${ko}.` : 'Prepará tu equipo en la zona de preparación de prensa (pasillo, a la derecha).',
       field: 'Hablá con Don Álvaro en la zona de prensa este.',
       briefed: this.kickedOff ? 'Cubrí el partido: buscá las mejores jugadas.' : `Fotografiá el calentamiento. El partido inicia a las ${ko} (T: esperar el saque).`,
       match: 'Cubrí el partido. Anticipá las jugadas y respetá las zonas de prensa.',
@@ -98,7 +101,7 @@ export class Story {
   }
   objectivePos() {
     const g = this.game, st = g.stadium;
-    return { street: this.mariana?.pos, credential: st.spots.guard, inside: this.alvaro?.pos, field: this.alvaro?.pos, post: st.spots.laptop }[this.stage] || null;
+    return { street: this.mariana?.pos, credential: st.spots.guard, inside: g.inventory.prepared ? this.alvaro?.pos : st.spots.prepStand, field: this.alvaro?.pos, post: st.spots.laptop }[this.stage] || null;
   }
   async talkMariana() {
     const g = this.game, inv = g.inventory, ev = this.ev, M = { who: 'Mariana Quesada', role: 'Coordinadora de prensa', color: '#0b3d91', initials: 'MQ', pitch: 1.5, pos: this.mariana.pos.clone().setY(1.6) };
@@ -158,8 +161,66 @@ export class Story {
     st.group.remove(bag); bp.visible = true;
     st.gate.open(); g.audio?.ui('door');
     g.cinematic = false;
-    await g.ui.dialogue([{ ...G, text: 'Listo, adelante. Siga el pasillo y baje por el túnel. ¡Buen trabajo!' }]);
-    this.stage = 'inside'; this.setObjective(); if (!this.gateHinted) { this.gateHinted = true; g.events.emit('story:gate'); } g.events.emit('story:security'); g.missions.add('m_cancha');
+    await g.ui.dialogue([{ ...G, text: 'Listo, adelante. A la derecha del pasillo está la zona de preparación de prensa: ahí puede alistar su equipo antes de bajar por el túnel.' }]);
+    this.stage = 'inside'; this.setObjective(); if (!this.gateHinted) { this.gateHinted = true; g.events.emit('story:gate'); } g.events.emit('story:security'); g.missions.add('m_preparar');
+    g.saves.save('auto');
+  }
+  // Preparación del equipo: secuencia guiada con cámara cercana sobre la banca.
+  async prepare() {
+    const g = this.game, st = g.stadium, inv = g.inventory, B = st.spots.prepBench, P = st.spots.prepStand;
+    if (inv.prepared) return;
+    if (g.photoMode.active) g.photoMode.exit();
+    g.cinematic = true; g.ui.setPrompt(null);
+    g.player.place(P.x, P.z, Math.PI / 2); g.player.setCameraEquipped(false);
+    g.camOverride = { pos: new THREE.Vector3(B.x - 1.35, 1.45, B.z + 0.9), look: new THREE.Vector3(B.x, B.y + 0.12, B.z - 0.1) };
+    const grp = new THREE.Group(); st.group.add(grp); this.props.push(grp);
+    const M = (c, r = 0.5, m = 0.2) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m });
+    const bag = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.34, 0.3), M(0x22333b, 0.85)); bag.position.set(B.x + 0.05, B.y + 0.17, B.z + 1.1); grp.add(bag);
+    const flap = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.03, 0.31), M(0x1b2a30, 0.85)); flap.position.set(0, 0.18, 0); bag.add(flap);
+    const body = new THREE.Group(); const bb = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.105, 0.085), M(0x151515, 0.45, 0.25)); body.add(bb);
+    const prism = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.035, 0.06), M(0x151515, 0.45, 0.25)); prism.position.y = 0.07; body.add(prism);
+    const mount = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.006, 8, 20), M(0xc0c0c0, 0.3, 0.9)); mount.position.z = 0.045; body.add(mount);
+    body.position.copy(bag.position); body.visible = false; grp.add(body);
+    const battery = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.025, 0.06), M(0x2b2b2b, 0.6)); battery.visible = false; grp.add(battery);
+    const card = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.002, 0.032), M(0x0b3d91, 0.4)); card.visible = false; grp.add(card);
+    g.input.releaseLock();
+    const panel = document.createElement('div'); panel.className = 'dialogue prep'; document.getElementById('ui-root').appendChild(panel); g.ui.customNavRoot = panel;
+    const step = (title, text, buttons) => new Promise((res) => {
+      panel.innerHTML = `<div class="portrait" style="background:#0b3d91">🎒</div><div style="flex:1"><div class="who">PREPARACIÓN DEL EQUIPO<span class="role">${title}</span></div><div class="txt">${text}</div><div class="opts"></div></div>`;
+      const opts = panel.querySelector('.opts');
+      buttons.forEach(([label, val], i) => { const b = document.createElement('button'); b.className = 'btn' + (i === 0 ? ' primary' : ''); b.textContent = label; b.onclick = () => res(val); opts.appendChild(b); });
+    });
+    const move = (obj, to, dur, rot) => { const from = obj.position.clone(), r0 = obj.rotation.clone(); obj.visible = true; return this.tween(dur, (t) => { const e = t * t * (3 - 2 * t); obj.position.lerpVectors(from, to, e); obj.position.y += Math.sin(e * Math.PI) * 0.12; if (rot) obj.rotation.set(r0.x + (rot.x - r0.x) * e, r0.y + (rot.y - r0.y) * e, r0.z + (rot.z - r0.z) * e); }); };
+    const center = new THREE.Vector3(B.x, B.y + 0.06, B.z);
+    await step('Paso 1 de 7', 'Dejá la mochila sobre la banca.', [['Dejar la mochila', 1]]);
+    g.player.avatar.backpack && (g.player.avatar.backpack.visible = false); g.audio?.ui('door');
+    await move(bag, new THREE.Vector3(B.x + 0.05, B.y + 0.17, B.z + 0.45), 0.8);
+    await step('Paso 2 de 7', `Abrí la mochila y sacá el cuerpo <b>${inv.camera.name}</b>.`, [['Sacar la cámara', 1]]);
+    g.audio?.ui('click'); flap.rotation.x = -1.2; flap.position.set(0, 0.2, -0.12);
+    await move(body, center, 0.9, new THREE.Euler(0, Math.PI / 2, 0));
+    const lenses = [inv.equipped.lens, ...[...inv.packed].filter((id) => ALL_ITEMS[id]?.type === 'lens' && id !== inv.equipped.lens)];
+    const chosen = lenses.length > 1 ? await step('Paso 3 de 7', 'Elegí el lente para empezar la cobertura (los demás quedan en la mochila).', lenses.map((id) => [ALL_ITEMS[id].name, id])) : (await step('Paso 3 de 7', `Montá el lente <b>${ALL_ITEMS[lenses[0]].name}</b>: alineá el punto rojo y girá hasta escuchar el clic.`, [['Montar lente', lenses[0]]]), lenses[0]);
+    const L = ALL_ITEMS[chosen], len = 0.07 + L.max / 1400, rad = 0.035 + L.max / 9000;
+    const lens = new THREE.Mesh(new THREE.CylinderGeometry(rad, rad * 1.08, len, 24).rotateZ(Math.PI / 2), M(L.max >= 300 ? 0xe9e6dc : 0x1d1d1d, 0.4, 0.3));
+    lens.position.copy(bag.position).add(new THREE.Vector3(0, 0.1, 0)); grp.add(lens);
+    await move(lens, center.clone().add(new THREE.Vector3(0.045 + len / 2, 0, 0)), 0.9);
+    await this.tween(0.35, (t) => { lens.rotation.x = -t * 1.2; });
+    g.audio?.ui('af'); if (inv.equipped.lens !== chosen) { inv.packed.add(inv.equipped.lens); inv.packed.delete(chosen); inv.equipped.lens = chosen; }
+    await step('Paso 4 de 7', `Insertá la batería (carga ${inv.batteryPct}%). ${inv.spares.length && inv.packed.has('battery') ? `Llevás ${inv.spares.length} de repuesto en la mochila.` : 'No llevás baterías de repuesto.'}`, [['Insertar batería', 1]]);
+    battery.position.copy(bag.position).add(new THREE.Vector3(0, 0.12, 0)); await move(battery, center.clone().add(new THREE.Vector3(0, -0.06, 0)), 0.7); battery.visible = false; g.audio?.ui('click');
+    await step('Paso 5 de 7', `Insertá la tarjeta <b>${inv.card.name}</b> (${inv.cardCapacity - inv.cardUsed} fotos libres).`, [['Insertar tarjeta', 1]]);
+    card.position.copy(bag.position).add(new THREE.Vector3(0, 0.12, 0)); await move(card, center.clone().add(new THREE.Vector3(-0.06, 0.01, 0.03)), 0.7); card.visible = false; g.audio?.ui('click');
+    const sport = await step('Paso 6 de 7', 'Encendé la cámara y revisá los ajustes. ¿Cargar el perfil de deportes recomendado por Don Álvaro (AF-C, 1/1000, ISO AUTO, ráfaga)?', [['Sí, perfil deportes', true], ['Mantener mis ajustes', false]]);
+    g.audio?.ui('beep');
+    if (sport) { const s2 = g.photoMode.s; s2.af = 'AF-C'; s2.shutterIdx = 10; s2.isoIdx = 0; s2.ev = 0; s2.drive = 'burst'; s2.wbIdx = 0; }
+    await step('Paso 7 de 7', 'Todo listo. Colgate la cámara y volvé a ponerte la mochila.', [['Colgarme la cámara', 1]]);
+    await this.tween(0.5, (t) => { body.position.y = center.y + t * 0.5; lens.position.y = center.y + t * 0.5; });
+    st.group.remove(grp); panel.remove(); g.ui.customNavRoot = null;
+    if (g.player.avatar.backpack) g.player.avatar.backpack.visible = true;
+    g.player.avatar.setLensLength(L.max); g.player.setCameraEquipped(true);
+    g.camOverride = null; g.cinematic = false; g.follow.snap(g.player);
+    inv.prepared = true; this.setObjective(); g.events.emit('story:prepared'); g.missions.add('m_cancha');
+    g.ui.toast(`Equipo listo: ${inv.camera.name} + ${L.short}`, 'good', 3000);
     g.saves.save('auto');
   }
   tween(dur, fn) { return new Promise((res) => { this.timers.push({ t: 0, dur, fn, res }); }); }

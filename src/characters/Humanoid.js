@@ -146,7 +146,7 @@ export class Humanoid {
 
     // Estado de animación
     this.phase = Math.random() * 10; this.speed = 0; this.state = 'idle'; this.stateT = 0; this.stateDur = 1;
-    this.side = 1; this.excite = 0; this.lookYaw = 0; this.lookPitch = 0; this.rootYOffset = 0;
+    this.side = 1; this.excite = 0; this.lookYaw = 0; this.turnLean = 0; this.accelLean = 0; this.lookPitch = 0; this.rootYOffset = 0;
     this.pose = this.blankPose(); this.lambda = 14; this.breath = Math.random() * 6;
     this.idleVariant = Math.random();
   }
@@ -182,6 +182,8 @@ export class Humanoid {
       p.hipY = Math.abs(Math.sin(ph)) * (0.025 * walk + 0.05 * run) - 0.03 * run;
       p.spineRX = 0.05 * walk + 0.22 * run; p.spineRY = sn * 0.08 * (walk + run);
       p.headRX = -p.spineRX * 0.6;
+      const tl = Math.max(-0.35, Math.min(0.35, this.turnLean || 0)), al = Math.max(-0.12, Math.min(0.22, this.accelLean || 0));
+      p.rootRZ = tl; p.spineRX += al; p.spineRZ = -tl * 0.3;
       if (sp < 0.15) { // idle con respiración
         const b = Math.sin(this.breath) * 0.02;
         p.spineRX = 0.02 + b; p.shL[2] = -0.12 - b; p.shR[2] = 0.12 + b; p.elL = -0.15; p.elR = -0.15;

@@ -79,6 +79,7 @@ export class Game {
     E.on('match:save', () => this.audio.groan());
     E.on('match:event', (ev) => { if (ev.type === 'remate') setTimeout(() => { if (this.match && !this.match.events.some((e) => e.type === 'gol' && e.t > ev.t)) this.audio.groan(); }, 1300); });
     E.on('match:end', () => this.story.onMatchEnd());
+    E.on('env:label', () => this.post?.configure());
     E.on('battery:empty', () => { this.ui.toast('¡Batería agotada! Presioná B para cambiarla.', 'bad', 4000); if (this.photoMode.active) this.photoMode.exit(); });
     E.on('photo:taken', (rec) => { this.career.stats.photos++; });
   }
@@ -93,6 +94,7 @@ export class Game {
   buildLevel(ev, onProgress = () => {}) {
     this.disposeLevel();
     const home = TEAMS[ev.home], away = TEAMS[ev.away];
+    this.env.clearRegistry();
     this.env.configure(ev.time, ev.weather, []);
     onProgress(0.3, 'Construyendo estadio…');
     this.stadium = new Stadium(this, STADIUMS[ev.stadium], home, away);
@@ -208,6 +210,10 @@ export class Game {
       if (inp.wasPressed('interact')) this.interaction.interact();
       if (inp.wasPressed('view')) this.toggleView();
     }
+    const notReady = this.inEvent && !this.inventory.prepared;
+    if ((inp.wasPressed('equip') || inp.mouse.rightPressed || inp.padTriggerPressed(6)) && notReady) {
+      this.ui.toast('Tu cámara está guardada en la mochila: prepará el equipo en la zona de preparación de prensa (después de seguridad).', 'warn', 3500); return;
+    }
     if (inp.wasPressed('equip')) {
       if (pm.active) pm.exit();
       p.setCameraEquipped(!p.cameraEquipped); this.audio.ui('click');
@@ -274,6 +280,7 @@ export class Game {
       p.update(dt, this.input, this.photoMode.yaw, freeMove);
       this.photoMode.update(dt);
     }
+    if (this.camOverride) { this.camera.position.lerp(this.camOverride.pos, 1 - Math.exp(-6 * dt)); this.camera.lookAt(this.camOverride.look); if (Math.abs(this.camera.fov - 45) > 0.1) { this.camera.fov = 45; this.camera.updateProjectionMatrix(); } }
     // Superficie para pasos
     p.surface = Math.abs(p.pos.x) < 60.5 && Math.abs(p.pos.z) < 42 ? 'grass' : p.pos.z > APRON_Z && st && p.pos.z < st.gateZ ? 'tile' : 'concrete';
     // Interacción contextual
@@ -303,7 +310,7 @@ export class Game {
       if (vis && n.pos.distanceTo(p.pos) < 140) n.update(dt, p.pos);
     }
     this.story.update(dt); this.rules.update(dt);
-    this.env.update(dt, st && Math.abs(p.pos.x) < 75 && Math.abs(p.pos.z) < 48 ? new THREE.Vector3(0, 0, 0) : this.camera.position, this.time);
+    this.env.update(dt, st && Math.abs(p.pos.x) < 75 && Math.abs(p.pos.z) < 48 ? new THREE.Vector3(0, 0, 0) : this.camera.position, this.time, this.clock / 60);
     // Audio
     const interior = st && p.pos.z > APRON_Z + 0.5 && p.pos.z < st.gateZ && Math.abs(p.pos.x) < 25;
     this.audio.updateListener(this.camera);

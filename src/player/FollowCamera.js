@@ -29,7 +29,7 @@ export class FollowCamera {
     if (Math.abs(this.camera.fov - fov) > 0.05) { this.camera.fov = damp(this.camera.fov, fov, 5, dt); this.camera.updateProjectionMatrix(); }
     this.smoothTarget.copy(player.pos).add(new THREE.Vector3(0, 1.55, 0));
   }
-  snap(player) { this.yaw = player.yaw; this.smoothTarget.copy(player.pos).add(new THREE.Vector3(0, 1.55, 0)); }
+  snap(player) { this.yaw = player.yaw; this.smoothTarget.copy(player.pos).add(new THREE.Vector3(0, 1.55, 0)); this.vel?.set(0, 0, 0); }
   update(dt, input, player, allowLook) {
     if (this.firstPerson) return this.updateFP(dt, input, player, allowLook);
     if (allowLook) {
@@ -39,9 +39,17 @@ export class FollowCamera {
     }
     const h = player.crouch ? 1.05 : 1.55;
     this.target.copy(player.pos).add(new THREE.Vector3(0, h, 0));
-    this.smoothTarget.x = damp(this.smoothTarget.x, this.target.x, 14, dt);
-    this.smoothTarget.y = damp(this.smoothTarget.y, this.target.y, 8, dt);
-    this.smoothTarget.z = damp(this.smoothTarget.z, this.target.z, 14, dt);
+    // Resorte críticamente amortiguado: la cámara tiene masa (se retrasa al arrancar y se asienta al frenar)
+    if (!this.vel) this.vel = new THREE.Vector3();
+    const w = 9, wy = 6, dtc = Math.min(dt, 0.05);
+    for (const [ax, ww] of [['x', w], ['y', wy], ['z', w]]) {
+      const a = (this.target[ax] - this.smoothTarget[ax]) * ww * ww - 2 * ww * this.vel[ax];
+      this.vel[ax] += a * dtc; this.smoothTarget[ax] += this.vel[ax] * dtc;
+    }
+    // Balanceo leve al correr e inclinación en curvas
+    this.runT = (this.runT || 0) + dt * (player.speed > 3 ? player.speed * 2.2 : 0);
+    const run = Math.min(1, Math.max(0, (player.speed - 3) / 3));
+    this.roll = damp(this.roll || 0, (this.lastYaw !== undefined ? (this.yaw - this.lastYaw) / Math.max(dt, 1e-3) : 0) * -0.012, 6, dt); this.lastYaw = this.yaw;
     const dir = new THREE.Vector3(-Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), -Math.cos(this.yaw) * Math.cos(this.pitch));
     const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
     const pivot = this.smoothTarget.clone().addScaledVector(right, -this.shoulder);
@@ -50,9 +58,10 @@ export class FollowCamera {
     const want = Math.max(0.6, Math.min(this.dist, hit - 0.3));
     this.curDist = want < this.curDist ? want : damp(this.curDist, want, 4, dt);
     const pos = pivot.clone().addScaledVector(dir, this.curDist);
-    pos.y = Math.max(pos.y, 0.3);
+    pos.y = Math.max(pos.y, 0.3) + Math.abs(Math.sin(this.runT)) * 0.045 * run;
     this.camera.position.copy(pos);
     this.camera.lookAt(pivot.x, pivot.y + 0.1, pivot.z);
+    this.camera.rotateZ(Math.max(-0.04, Math.min(0.04, this.roll)) + Math.sin(this.runT * 0.5) * 0.006 * run);
     const fov = this.game.settings.data.fov + (player.speed > 5 ? 6 : 0);
     if (Math.abs(this.camera.fov - fov) > 0.05) { this.camera.fov = damp(this.camera.fov, fov, 5, dt); this.camera.updateProjectionMatrix(); }
   }
