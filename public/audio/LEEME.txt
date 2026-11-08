@@ -1,15 +1,18 @@
 SONIDOS PROPIOS PARA "ENTRE LÍNEAS"
 ==================================
 
-Poné aquí tus archivos de audio con estos nombres exactos
-(formato MP3, M4A, OGG o WAV):
+Poné aquí tus archivos de audio con estos nombres
+(formato M4A, MP3, OGG, WAV o MP4):
 
-  estadio_1.mp3   -> Ambiente de estadio (público de fondo, en bucle)
-  estadio_2.mp3   -> Cánticos / barra (en bucle, sube con la intensidad del partido)
-  menu.mp3        -> Música del menú de inicio y de la Redacción
+  menu.m4a                     -> Música del menú de inicio y de la Redacción
+  estadio_1.m4a ... estadio_8.m4a -> Ambiente de estadio / barra.
+                                  Se reproducen en orden aleatorio con fundido
+                                  cruzado y el volumen se normaliza solo.
 
 Usá solamente audio propio o que tengas permiso de usar.
 Estos archivos NO se suben a GitHub (están en .gitignore).
 
-Alternativa: dentro del juego, en Pausa o Menú -> Ajustes -> Audio -> "Tus sonidos",
-elegí los archivos desde tu computadora (se guardan en el navegador).
+Alternativa: dentro del juego, Ajustes -> Audio -> "Tus sonidos":
+  "Ambiente de estadio (lista)" -> Agregar… (podés elegir varios a la vez)
+  "Música de inicio"            -> Elegir…
+Se guardan en el navegador.

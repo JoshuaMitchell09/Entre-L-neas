@@ -104,8 +104,10 @@ Autoguardado en hitos, 3 ranuras manuales, cargar, continuar, nueva partida y el
 
 ### Tus propios sonidos (ambiente de estadio y música de inicio)
 El juego puede usar audio tuyo en lugar del ambiente generado:
-- **Opción 1:** copiá tus archivos a `public/audio/` con los nombres `estadio_1.mp3` (público de fondo), `estadio_2.mp3` (cánticos/barra) y `menu.mp3` (música de inicio). También acepta `.m4a`, `.ogg` o `.wav`.
-- **Opción 2:** en el juego, **Ajustes → Audio → Tus sonidos → Elegir…**. Quedan guardados en el navegador.
+- **Opción 1:** copiá tus archivos a `public/audio/`: `menu.m4a` (música de inicio) y `estadio_1.m4a` … `estadio_8.m4a` (grabaciones de barra/estadio). También acepta `.mp3`, `.ogg`, `.wav` o `.mp4`.
+- **Opción 2:** en el juego, **Ajustes → Audio → Tus sonidos** (*Agregar…* admite varios archivos a la vez). Quedan guardados en el navegador.
+
+Las grabaciones de estadio forman una lista: suenan en orden aleatorio, con fundido cruzado y volumen normalizado.
 
 El ambiente se mezcla con la intensidad del partido y se amortigua en pasillos y túnel; la música suena en el menú y en la Redacción. Usá solo audio propio o con permiso. La carpeta `public/audio` está excluida de Git para no subir archivos con derechos.
 
