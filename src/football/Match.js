@@ -188,7 +188,7 @@ export class Match {
         // Sorteo: el árbitro llama a los capitanes al círculo central; el resto va a su mitad
         this.phase = 'toss'; this.phaseT = 0; this.coinState = null;
         for (const p of players) { p.h.play(p.role === 'GK' ? 'gkReady' : 'loco'); p.cer = { delay: 0, face: 0, target: new THREE.Vector3((p.team ? 1 : -1) * (12 + (p.number % 4) * 3), 0, -8 + (p.number % 6) * 3.2) }; }
-        this.captains[0].cer = { delay: 0, face: Math.PI / 2, target: new THREE.Vector3(-1.05, 0, 0) };
+        this.captains[0].cer = { delay: 0, face: Math.PI / 2, target: new THREE.Vector3(-1.05, 0, 0) }; this.captains.forEach((c) => c.h.play('loco'));
         this.captains[1].cer = { delay: 0, face: -Math.PI / 2, target: new THREE.Vector3(1.05, 0, 0) };
         this.ref.cer = { delay: 0, face: Math.PI, target: new THREE.Vector3(0, 0, 0.9) };
         this.ars[0].cer = { delay: 0, face: Math.PI, target: new THREE.Vector3(-3, 0, 1.6) }; this.ars[1].cer = { delay: 0, face: Math.PI, target: new THREE.Vector3(3, 0, 1.6) };
@@ -197,7 +197,8 @@ export class Match {
     } else if (this.phase === 'toss') {
       for (const o of [...refs, ...players]) this.cerMove(o, dt, 2.4);
       const c = this.coin, r = this.ref;
-      if (!this.coinState && T > 5) {
+      const capsReady = this.captains.every((c) => c.pos.distanceTo(c.cer.target) < 0.5) && this.ref.pos.distanceTo(this.ref.cer.target) < 0.5;
+      if (!this.coinState && ((capsReady && T > 2.5) || T > 16)) {
         this.coinState = { t: 0, from: r.pos.clone().add(new THREE.Vector3(0.25, 1.25, -0.2)), result: Math.random() < 0.5 ? 0 : 1 };
         r.h.play('point', 1.2, 1); c.visible = true;
         this.logEvent('sorteo', [this.ref, ...this.captains], new THREE.Vector3(0, 1.5, 0), { team: 0, peak: this.time + 0.45 });

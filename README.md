@@ -111,6 +111,11 @@ Las grabaciones de estadio forman una lista: suenan en orden aleatorio, con fund
 
 El ambiente se mezcla con la intensidad del partido y se amortigua en pasillos y túnel; la música suena en el menú y en la Redacción. Usá solo audio propio o con permiso. La carpeta `public/audio` está excluida de Git para no subir archivos con derechos.
 
+### Modo arcade y ceremonia previa
+- **Modo arcade** (menú principal): elegís estadio, equipo local y visitante, horario (incluido el ciclo real), clima, duración, cámara y lente, y empezás en la cancha con todo el equipo. Al final ves tus 10 mejores fotos y un puntaje; no afecta la carrera.
+- **Ceremonia previa:** los equipos salen del túnel en dos filas detrás de la terna arbitral, se alinean frente a la tribuna principal y posan para la **foto oficial** (el campo queda habilitado para los fotógrafos). Luego el árbitro llama a los **capitanes (con banda)** al círculo central y lanza la **moneda**: el ganador elige lado, el otro saca. Según el sorteo se te asigna la zona de prensa (y cambia en el medio tiempo); Kendall Rojas y los demás fotógrafos caminan hacia ella.
+- **Animación:** caídas físicas tipo muñeco de trapo en barridas y faltas, estiradas del portero con vuelo y levantada, portero en guardia con rebote, y tarjetas amarillas/rojas visibles en la mano del árbitro.
+
 ### Preparación del equipo, horarios y nuevas sedes
 - **Zona de preparación** (pasillo, después de seguridad): dejás la mochila en la banca, sacás el cuerpo de cámara, elegís y montás el lente, insertás batería y tarjeta y podés cargar el perfil de deportes. Hasta entonces la cámara va guardada.
 - **Horario de cada cobertura** (en la Redacción): original, tarde, atardecer, noche o **ciclo real** (empieza 17:05 y anochece durante el partido). Sol, cielo, niebla, nubes y exposición cambian minuto a minuto; los focos, vallas LED, ventanas y faroles se encienden gradualmente.
