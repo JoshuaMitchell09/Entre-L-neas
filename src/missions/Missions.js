@@ -4,7 +4,7 @@ export const MISSION_DEFS = {
   m_llegar: { title: 'Llegá al estadio', desc: 'Caminá hasta el acceso de prensa del estadio.', kind: 'story', target: 1, trigger: 'story:gate', reward: {} },
   m_seguridad: { title: 'Pasá el control de seguridad', desc: 'Presentá tu acreditación al guardia y pasá la mochila por el escáner.', kind: 'story', target: 1, trigger: 'story:security', reward: {} },
   m_preparar: { title: 'Prepará tu equipo', desc: 'En la zona de preparación del pasillo: dejá la mochila, montá el lente, batería y tarjeta.', kind: 'story', target: 1, trigger: 'story:prepared', reward: {} },
-  m_cancha: { title: 'Encontrá a Don Álvaro', desc: 'Atravesá el túnel y buscalo en la zona de prensa detrás de la portería este.', kind: 'story', target: 1, trigger: 'story:alvaro', reward: { rep: 1 } },
+  m_cancha: { title: 'Encontrá a Kendall Rojas', desc: 'Atravesá el túnel y buscalo en la zona de prensa detrás de la portería este.', kind: 'story', target: 1, trigger: 'story:alvaro', reward: { rep: 1 } },
   m_calentamiento: { title: 'Primera cobertura', desc: 'Capturá 5 fotografías del calentamiento (calidad mínima 35).', kind: 'event', target: 5, photo: { tags: ['calentamiento'], min: 35 }, reward: { money: 10000, rep: 2 } },
   m_entrega: { title: 'Tu primera entrega', desc: 'Entregá al editor al menos una fotografía válida (40 o más).', kind: 'story', target: 1, trigger: 'delivery:valid', reward: { money: 5000, rep: 2 } },
   m_gol: { title: 'El gol', desc: 'Capturá una fotografía de un gol (calidad mínima 50).', kind: 'event', target: 1, photo: { tags: ['gol'], min: 50 }, reward: { money: 30000, rep: 3 } },

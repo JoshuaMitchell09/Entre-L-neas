@@ -34,7 +34,14 @@ export class AudioEngine {
     this.custom = {}; this.loadCustomAudio();
   }
   // ---------- Audio propio del jugador (archivos en public/audio o elegidos en Ajustes) ----------
-  static CUSTOM = { estadio: { file: 'estadio', label: 'Ambiente de estadio (lista)', multi: true }, menu: { file: 'menu', label: 'Música de inicio' } };
+  static CUSTOM = {
+    menu: { file: 'menu', label: 'Música de inicio' },
+    estadio_cueva: { file: 'cueva', label: 'Ambiente · Estadio La Cueva', multi: true, stadium: 'cueva' },
+    estadio_alajuela: { file: 'alajuela', label: 'Ambiente · Estadio de Alajuela', multi: true, stadium: 'alajuela' },
+    estadio_cartago: { file: 'cartago', label: 'Ambiente · Estadio de Cartago', multi: true, stadium: 'cartago' },
+    estadio_irazu: { file: 'irazu', label: 'Ambiente · Metropolitano Irazú', multi: true, stadium: 'irazu' },
+    estadio: { file: 'estadio', label: 'Ambiente general (estadios sin audio propio)', multi: true },
+  };
   static EXT = ['m4a', 'mp3', 'ogg', 'wav', 'mp4', 'webm'];
   idb() {
     return new Promise((res) => { try { const rq = indexedDB.open('entrelineas-audio', 1); rq.onupgradeneeded = () => rq.result.createObjectStore('files'); rq.onsuccess = () => res(rq.result); rq.onerror = () => res(null); } catch (e) { res(null); } });
@@ -72,12 +79,26 @@ export class AudioEngine {
     if (mb) menu = await this.decode(await mb.arrayBuffer());
     if (!menu) menu = await this.fetchAudio('menu');
     this.setMenu(menu);
-    // Lista de ambiente de estadio: guardados en el navegador + carpeta public/audio
-    const list = [];
-    const stored = (await this.storedBlob('estadio')) || [];
+    this.listCache = {}; this.counts = {};
+    for (const key of Object.keys(AudioEngine.CUSTOM)) if (key !== 'menu') this.counts[key] = (await this.loadList(key)).length;
+    this.applyStadium();
+  }
+  // Lista de grabaciones de un estadio: guardadas en el navegador + archivos <nombre>_1..8 en public/audio
+  async loadList(key) {
+    if (this.listCache[key]) return this.listCache[key];
+    const def = AudioEngine.CUSTOM[key], list = [];
+    const stored = (await this.storedBlob(key)) || [];
     for (const blob of stored) { const b = await this.decode(await blob.arrayBuffer()); if (b) list.push(b); }
-    for (let i = 1; i <= 8; i++) { const b = await this.fetchAudio(`estadio_${i}`); if (b) list.push(b); }
-    this.setCrowdList(list);
+    for (let i = 1; i <= 8; i++) { const b = await this.fetchAudio(`${def.file}_${i}`); if (b) list.push(b); }
+    this.listCache[key] = list; return list;
+  }
+  // El ambiente que suena depende del estadio: el suyo propio o, si no tiene, el general.
+  setStadium(id) { this.stadiumId = id; if (this.listCache) this.applyStadium(); }
+  applyStadium() {
+    const own = this.stadiumId && this.listCache['estadio_' + this.stadiumId];
+    const list = own && own.length ? own : this.listCache.estadio || [];
+    if (this.crowdSource === list) return;
+    this.crowdSource = list; this.setCrowdList(list);
   }
   setMenu(buf) {
     const old = this.custom.menu; if (old) { try { old.src.stop(); } catch (e) { /* */ } old.g.disconnect(); }
@@ -91,7 +112,7 @@ export class AudioEngine {
     if (!this.customCrowd) { this.customCrowd = this.ctx.createGain(); this.customCrowd.gain.value = 0; this.customCrowd.connect(this.crowdFilter); }
     this.crowdList = list.map((b) => ({ buf: b, norm: this.normGain(b) }));
     this.crowdPlayer = { cur: null, order: [], next: 0 };
-    if (list.length) this.custom.estadio = { count: list.length }; else delete this.custom.estadio;
+    if (list.length) this.custom.crowd = { count: list.length }; else delete this.custom.crowd;
     this.game.events?.emit('audio:custom', 'estadio');
   }
   // Encadena grabaciones con fundido cruzado, en orden aleatorio sin repetir seguidas.
@@ -117,17 +138,20 @@ export class AudioEngine {
     if (!bufs.length) return false;
     if (key === 'menu') { await this.storeBlob('menu', bufs[0][0]); this.setMenu(bufs[0][1]); }
     else {
-      const prev = (await this.storedBlob('estadio')) || [];
-      await this.storeBlob('estadio', [...prev, ...bufs.map(([f]) => f)]);
-      this.setCrowdList([...(this.crowdList || []).map((x) => x.buf), ...bufs.map(([, b]) => b)]);
+      const prev = (await this.storedBlob(key)) || [];
+      await this.storeBlob(key, [...prev, ...bufs.map(([f]) => f)]);
+      this.listCache[key] = [...(this.listCache[key] || []), ...bufs.map(([, b]) => b)]; this.counts[key] = this.listCache[key].length;
+      this.crowdSource = null; this.applyStadium();
     }
     return true;
   }
   async clearFile(key) {
     await this.storeBlob(key, null);
-    if (key === 'menu') this.setMenu(null); else { this.setCrowdList([]); this.loadCustomAudio(); }
+    if (key === 'menu') { this.setMenu(await this.fetchAudio('menu')); return; }
+    delete this.listCache[key]; this.counts[key] = (await this.loadList(key)).length; this.crowdSource = null; this.applyStadium();
   }
-  hasCustom(key) { return !!this.custom?.[key]; }
+  countFor(key) { return key === 'menu' ? (this.custom.menu ? 1 : 0) : this.counts?.[key] || 0; }
+  hasCustom(key) { return key === 'menu' ? !!this.custom?.menu : this.countFor(key) > 0; }
   applyVolumes() {
     if (!this.ctx) return;
     const s = this.game.settings.data;
@@ -177,7 +201,7 @@ export class AudioEngine {
     this.crowdFilter.frequency.setTargetAtTime(inStadiumBowl ? 9000 : interior ? 520 : 900, this.ctx.currentTime, 0.3);
     this.revGain.gain.setTargetAtTime(interior ? 0.5 : inStadiumBowl ? 0.18 : 0.08, this.ctx.currentTime, 0.4);
     this.crowdBus.gain.setTargetAtTime(crowdLvl * (clasico ? 1.25 : 1), this.ctx.currentTime, 0.5);
-    const menu = this.custom?.menu, customCrowd = !!this.custom?.estadio;
+    const menu = this.custom?.menu, customCrowd = !!this.custom?.crowd;
     if (customCrowd) { this.crowdTick(); this.customCrowd.gain.setTargetAtTime((st.menu ? 0.35 : 0.8 + excite * 0.55), this.ctx.currentTime, 0.6); }
     if (menu) menu.g.gain.setTargetAtTime(st.menu ? 0.9 * menu.norm : 0, this.ctx.currentTime, st.menu ? 0.8 : 0.5);
     this.setGain(this.crowdBed, (0.22 + excite * 0.35) * (customCrowd ? 0.3 : 1), 0.3);
@@ -188,7 +212,7 @@ export class AudioEngine {
     this.setGain(this.windBed, interior ? 0.02 : 0.08 + (weather === 'rain' ? 0.08 : 0), 1);
     // Cánticos y bombo de la barra
     if (crowd && crowdLvl > 0.05) {
-      this.nextChant -= dt * (1 + excite * 2 + (clasico ? 1 : 0)) * (this.custom?.estadio ? 0.2 : 1);
+      this.nextChant -= dt * (1 + excite * 2 + (clasico ? 1 : 0)) * (this.custom?.crowd ? 0.2 : 1);
       if (this.nextChant <= 0) { this.chant(); this.nextChant = rand(18, 34); this.chanting = 9; }
       if (this.chanting > 0 || clasico || excite > 0.5) {
         this.chanting -= dt; this.nextDrum -= dt;

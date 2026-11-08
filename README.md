@@ -64,7 +64,7 @@ Todos los controles son reasignables en **Pausa → Ajustes → Teclas**.
 3. **Camino al estadio**: caminás físicamente; no hay teletransporte.
 4. **Seguridad**: el guardia verifica tus datos; la mochila viaja por la banda del escáner de rayos X, cruzás el arco detector y la puerta corrediza se abre. **Sin acreditación la puerta queda cerrada** (colisión real).
 5. **Pasillos**: vestuarios (bloqueados: tu acreditación no los incluye), sala de prensa (se abre con la credencial), túnel iluminado; el sonido del público se amortigua dentro y crece al salir.
-6. **Primera fotografía**: Don Álvaro te enseña posicionamiento, velocidad, enfoque y anticipación; misión de calentamiento (5 fotos), partido, entrega al editor.
+6. **Primera fotografía**: Kendall Rojas te enseña posicionamiento, velocidad, enfoque y anticipación; misión de calentamiento (5 fotos), partido, entrega al editor.
 
 ### Sistema fotográfico (núcleo)
 - Visor en primera persona con cuadro 3:2, tercios, punto AF, barra de parámetros y exposímetro.
@@ -104,8 +104,8 @@ Autoguardado en hitos, 3 ranuras manuales, cargar, continuar, nueva partida y el
 
 ### Tus propios sonidos (ambiente de estadio y música de inicio)
 El juego puede usar audio tuyo en lugar del ambiente generado:
-- **Opción 1:** copiá tus archivos a `public/audio/`: `menu.m4a` (música de inicio) y `estadio_1.m4a` … `estadio_8.m4a` (grabaciones de barra/estadio). También acepta `.mp3`, `.ogg`, `.wav` o `.mp4`.
-- **Opción 2:** en el juego, **Ajustes → Audio → Tus sonidos** (*Agregar…* admite varios archivos a la vez). Quedan guardados en el navegador.
+- **Opción 1:** copiá tus archivos a `public/audio/`: `menu.m4a` (música de inicio) y el ambiente **por estadio**: `cueva_1…8`, `alajuela_1…8`, `cartago_1…8`, `irazu_1…8`. `estadio_1…8` es el ambiente general para los estadios sin audio propio. También acepta `.mp3`, `.ogg`, `.wav` o `.mp4`.
+- **Opción 2:** en el juego, **Ajustes → Audio → Tus sonidos**: cada estadio tiene su *Agregar…* (admite varios archivos a la vez). Quedan guardados en el navegador.
 
 Las grabaciones de estadio forman una lista: suenan en orden aleatorio, con fundido cruzado y volumen normalizado.
 
@@ -139,7 +139,7 @@ src/
   characters/   Humanoid: rig óseo + animaciones procedurales con transiciones
   world/        Environment (cielo, sol, noche, lluvia), Stadium, StadiumConfigs, City, Crowd
   player/       PlayerController (3.ª persona), FollowCamera (colisión, zoom)
-  npc/          NPC genérico + apariencias (Mariana, Álvaro, guardia, policía, stewards…)
+  npc/          NPC genérico + apariencias (Mariana, Kendall Rojas, guardia, policía, stewards…)
   interaction/  Sistema de interacción, puertas con bisagra/corredizas
   football/     Teams, Ball (física), Footballer, Match (IA, reglas, eventos)
   photography/  Equipment, PhotoMode (visor), PhotoPipeline (render óptico), PhotoEvaluator, EditEval
@@ -156,7 +156,7 @@ src/
 
 Se ejecutó el juego en Chromium (render por software) con scripts de Playwright y se revisaron capturas de cada etapa:
 
-- Menú con el estadio de fondo, calle, puesto de acreditaciones, credencial, control de seguridad (banda del escáner y arco), pasillo, sala de prensa, túnel, zona de Don Álvaro.
+- Menú con el estadio de fondo, calle, puesto de acreditaciones, credencial, control de seguridad (banda del escáner y arco), pasillo, sala de prensa, túnel, zona de Kendall Rojas.
 - Visor fotográfico y fotos JPEG reales: profundidad de campo física, sobreexposición a 1/60 (+4 EV) detectada, foco errado detectado ("El foco quedó 24,1 m delante de…"), celebración evaluada 85/100 y marcada como posible portada.
 - Partidos completos simulados a velocidad acelerada (90 minutos): marcadores 1-1, 2-1, 1-3; 12–19 remates, 5–9 atajadas, córners, penales, amarillas y rojas, disputas aéreas.
 - Entrega al editor → resultados (+6 reputación, ₡130 600) → Redacción con calendario y tienda.

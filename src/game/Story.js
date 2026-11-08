@@ -31,8 +31,8 @@ export class Story {
     this.mariana.mapLabel = 'Mariana (acreditaciones)';
     this.guard = add(st.group, { name: 'Oficial Brenes', role: 'story', look: LOOKS.guard, pos: st.spots.guard, yaw: 0, idle: 'loco' });
     this.guard.mapLabel = 'Seguridad';
-    this.alvaro = add(st.group, { name: 'Don Álvaro', role: 'story', look: LOOKS.alvaro, pos: st.spots.alvaro, yaw: -Math.PI / 2, idle: 'sit', camera: 400 });
-    this.alvaro.mapLabel = 'Don Álvaro';
+    this.alvaro = add(st.group, { name: 'Kendall Rojas', role: 'story', look: LOOKS.alvaro, pos: st.spots.alvaro, yaw: -Math.PI / 2, idle: 'sit', camera: 400 });
+    this.alvaro.mapLabel = 'Kendall Rojas';
     g.storyNPCs = [this.mariana, this.guard, this.alvaro];
     // Policías en la plaza, periodistas en fila, vendedores
     add(city.group, { name: 'Policía', look: LOOKS.police, pos: new THREE.Vector3(4, 0, st.gateZ + 8), yaw: Math.PI, idle: 'loco' });
@@ -64,7 +64,7 @@ export class Story {
     I.clear();
     I.add({ position: this.mariana.pos.clone().setY(1.2).add(new THREE.Vector3(0, 0, 2)), radius: 3.2, prompt: () => `<kbd>${g.ui.key('interact')}</kbd>Hablar con Mariana`, onInteract: () => this.talkMariana() });
     I.add({ position: st.spots.guard.clone().setY(1.2), radius: 3.5, prompt: () => this.stage === 'street' || this.stage === 'credential' ? `<kbd>${g.ui.key('interact')}</kbd>Presentarse en seguridad` : null, onInteract: () => this.security() });
-    I.add({ getPosition: () => this.alvaro.pos.clone().setY(1), position: this.alvaro.pos, radius: 3, prompt: () => `<kbd>${g.ui.key('interact')}</kbd>Hablar con Don Álvaro`, onInteract: () => this.talkAlvaro() });
+    I.add({ getPosition: () => this.alvaro.pos.clone().setY(1), position: this.alvaro.pos, radius: 3, prompt: () => `<kbd>${g.ui.key('interact')}</kbd>Hablar con Kendall Rojas`, onInteract: () => this.talkAlvaro() });
     g.inventory.prepared = false;
     I.add({ position: st.spots.prepBench.clone().setY(1), radius: 2.6, prompt: () => (!g.inventory.prepared && ['inside', 'field'].includes(this.stage) ? `<kbd>${g.ui.key('interact')}</kbd>Preparar equipo` : null), onInteract: () => this.prepare() });
     I.add({ position: st.pressDoor.center, radius: 2.4, prompt: () => (st.pressDoor.isOpen ? null : `<kbd>${g.ui.key('interact')}</kbd>Abrir: Sala de prensa`), onInteract: () => {
@@ -90,8 +90,8 @@ export class Story {
     const T = {
       street: 'Recogé tu acreditación en el toldo azul de prensa (plaza del estadio).',
       credential: 'Andá al acceso de prensa del estadio y pasá el control de seguridad.',
-      inside: g.inventory.prepared ? `Cruzá el túnel y buscá a Don Álvaro detrás de la portería este. Saque inicial: ${ko}.` : 'Prepará tu equipo en la zona de preparación de prensa (pasillo, a la derecha).',
-      field: 'Hablá con Don Álvaro en la zona de prensa este.',
+      inside: g.inventory.prepared ? `Cruzá el túnel y buscá a Kendall Rojas detrás de la portería este. Saque inicial: ${ko}.` : 'Prepará tu equipo en la zona de preparación de prensa (pasillo, a la derecha).',
+      field: 'Hablá con Kendall Rojas en la zona de prensa este.',
       briefed: this.kickedOff ? 'Cubrí el partido: buscá las mejores jugadas.' : `Fotografiá el calentamiento. El partido inicia a las ${ko} (T: esperar el saque).`,
       match: 'Cubrí el partido. Anticipá las jugadas y respetá las zonas de prensa.',
       post: 'Partido terminado: andá a la sala de prensa y entregá tus fotos al editor.',
@@ -116,7 +116,7 @@ export class Story {
       { ...M, text: 'Dejame verificar en la lista… aquí estás. Esta es tu acreditación: es personal e intransferible.' },
       { ...M, text: 'Te da acceso al túnel, a la sala de prensa y a las zonas de fotógrafos pintadas en azul detrás de las porterías.' },
       { ...M, text: 'Reglas: nunca pisés la cancha y no entrés al área técnica mientras se juega. Si querés cambiar de lado, rodeá por la banda opuesta o por el pasillo detrás de los bancos. Tres faltas y seguridad te saca.' },
-      { ...M, text: `El partido es ${g.teamName(ev.home)} contra ${g.teamName(ev.away)} a las ${formatClock(ev.kickoff)}. Don Álvaro te espera detrás de la portería este. ¡Mucha suerte en tu primera cobertura!`, options: [{ label: '¡Gracias, Mariana!', value: 1 }] },
+      { ...M, text: `El partido es ${g.teamName(ev.home)} contra ${g.teamName(ev.away)} a las ${formatClock(ev.kickoff)}. Kendall Rojas te espera detrás de la portería este. ¡Mucha suerte en tu primera cobertura!`, options: [{ label: '¡Gracias, Mariana!', value: 1 }] },
     ] : [
       { ...M, text: `¡Qué dicha verte de nuevo, ${g.playerName}! Hoy cubrís ${g.teamName(ev.home)} vs ${g.teamName(ev.away)} en el ${st.name}.` },
       { ...M, text: `Aquí está tu acreditación. El encargo del editor es: «${ev.assignment.title}». ${ev.clasico ? 'Es clásico: seguridad está más estricta que nunca.' : 'Ya sabés las reglas.'}`, options: [{ label: 'Gracias', value: 1 }] },
@@ -210,7 +210,7 @@ export class Story {
     battery.position.copy(bag.position).add(new THREE.Vector3(0, 0.12, 0)); await move(battery, center.clone().add(new THREE.Vector3(0, -0.06, 0)), 0.7); battery.visible = false; g.audio?.ui('click');
     await step('Paso 5 de 7', `Insertá la tarjeta <b>${inv.card.name}</b> (${inv.cardCapacity - inv.cardUsed} fotos libres).`, [['Insertar tarjeta', 1]]);
     card.position.copy(bag.position).add(new THREE.Vector3(0, 0.12, 0)); await move(card, center.clone().add(new THREE.Vector3(-0.06, 0.01, 0.03)), 0.7); card.visible = false; g.audio?.ui('click');
-    const sport = await step('Paso 6 de 7', 'Encendé la cámara y revisá los ajustes. ¿Cargar el perfil de deportes recomendado por Don Álvaro (AF-C, 1/1000, ISO AUTO, ráfaga)?', [['Sí, perfil deportes', true], ['Mantener mis ajustes', false]]);
+    const sport = await step('Paso 6 de 7', 'Encendé la cámara y revisá los ajustes. ¿Cargar el perfil de deportes recomendado por Kendall Rojas (AF-C, 1/1000, ISO AUTO, ráfaga)?', [['Sí, perfil deportes', true], ['Mantener mis ajustes', false]]);
     g.audio?.ui('beep');
     if (sport) { const s2 = g.photoMode.s; s2.af = 'AF-C'; s2.shutterIdx = 10; s2.isoIdx = 0; s2.ev = 0; s2.drive = 'burst'; s2.wbIdx = 0; }
     await step('Paso 7 de 7', 'Todo listo. Colgate la cámara y volvé a ponerte la mochila.', [['Colgarme la cámara', 1]]);
@@ -225,16 +225,16 @@ export class Story {
   }
   tween(dur, fn) { return new Promise((res) => { this.timers.push({ t: 0, dur, fn, res }); }); }
   async talkAlvaro() {
-    const g = this.game, A = { who: 'Don Álvaro Jiménez', role: 'Fotógrafo veterano · mentor', color: '#4a5d23', initials: 'ÁJ', pitch: 0.85, pos: this.alvaro.pos.clone().setY(1.2) };
+    const g = this.game, A = { who: 'Kendall Rojas', role: 'Fotógrafo veterano · mentor', color: '#4a5d23', initials: 'KR', pitch: 0.85, pos: this.alvaro.pos.clone().setY(1.2) };
     if (this.stage === 'inside' || this.stage === 'field') {
       const first = !this.introDone && this.intro;
       const lines = first ? [
-        { ...A, text: `¡Diay, mae! Vos sos ${g.playerName}, el nuevo. Álvaro Jiménez, treinta años sentado detrás de estas porterías. Bienvenido a la cancha.` },
+        { ...A, text: `¡Diay, mae! Vos sos ${g.playerName}, el nuevo. Kendall Rojas, treinta años sentado detrás de estas porterías. Bienvenido a la cancha.` },
         { ...A, text: `Primero lo primero: sacá la cámara con ${g.ui.key('equip')}. Con clic derecho levantás el visor y con la rueda del mouse hacés zoom.` },
         { ...A, text: `En fútbol la velocidad lo es todo: a 1/1000 o más rápido congelás a los jugadores. En el visor, ${g.ui.key('paramPrev')} y ${g.ui.key('paramNext')} eligen el parámetro; ${g.ui.key('paramDec')} y ${g.ui.key('paramInc')} lo cambian. Dejá el ISO en AUTO si la luz cambia.` },
         { ...A, text: `El enfoque AF-C sigue al jugador: cuando el cuadro se pone verde, está nítido. Con ${g.ui.key('autofocus')} reenfocás sobre lo que tengas en el centro. Con ${g.ui.key('driveMode')} pasás a ráfaga.` },
         { ...A, text: 'Y lo más importante: anticipá. No sigás el balón, seguí la jugada. Cuando un delantero entra al área, vos ya tenés que estar encuadrándolo.' },
-        { ...A, text: 'Calentemos la mano: tomame cinco fotos buenas del calentamiento. Cuando arranque el partido, quedate de este lado o buscá la portería donde ataquen más.', options: [{ label: 'Entendido, Don Álvaro', value: 1 }] },
+        { ...A, text: 'Calentemos la mano: tomame cinco fotos buenas del calentamiento. Cuando arranque el partido, quedate de este lado o buscá la portería donde ataquen más.', options: [{ label: 'Entendido, Kendall Rojas', value: 1 }] },
       ] : [
         { ...A, text: `${pick(['¡Qué hubo!', '¡Pura vida, mae!', '¡Llegó el profesional!'])} Hoy el encargo es «${this.ev.assignment.title}». ${pick(ALVARO_TIPS)}`, options: [{ label: 'Gracias por el consejo', value: 1 }] },
       ];
