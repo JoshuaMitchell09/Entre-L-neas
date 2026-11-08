@@ -48,7 +48,7 @@ export class PostFX {
   configure() {
     if (!this.composer) return;
     const env = this.game.env, night = env.time === 'night', sunset = env.time === 'sunset';
-    this.bloom.strength = night ? 0.85 : sunset ? 0.55 : 0.28; this.bloom.threshold = night ? 0.75 : 0.9; this.bloom.radius = night ? 0.65 : 0.5;
+    this.bloom.strength = night ? 0.45 : sunset ? 0.4 : 0.22; this.bloom.threshold = night ? 0.93 : 0.92; this.bloom.radius = night ? 0.65 : 0.5;
     const u = this.grade.uniforms;
     u.uLift.value.set(...(night ? [0.0, 0.01, 0.03] : sunset ? [0.03, 0.01, 0.0] : [0.0, 0.0, 0.01]));
     u.uSat.value = env.weather === 'rain' ? 0.92 : sunset ? 1.12 : 1.06;

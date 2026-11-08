@@ -48,14 +48,14 @@ export class Environment {
       ground.rotation.x = -Math.PI / 2; ground.position.y = -5; es.add(ground);
     } else {
       es.background = new THREE.Color(0x070a12);
-      const lm = new THREE.MeshBasicMaterial({ color: new THREE.Color(9, 8.6, 8) });
+      const lm = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 2.1, 2.0) });
       for (const p of lights.slice(0, 16)) { const b = new THREE.Mesh(new THREE.BoxGeometry(14, 4, 14), lm); b.position.copy(p).multiplyScalar(0.8); es.add(b); }
       const ground = new THREE.Mesh(new THREE.CircleGeometry(400, 24), new THREE.MeshBasicMaterial({ color: 0x1d3a1d })); ground.rotation.x = -Math.PI / 2; ground.position.y = -2; es.add(ground);
     }
     this.envRT?.dispose();
     this.envRT = this.pmrem.fromScene(es, 0.03);
     this.scene.environment = this.envRT.texture;
-    this.scene.environmentIntensity = time === 'night' ? 0.35 : time === 'sunset' ? 0.5 : 0.6;
+    this.scene.environmentIntensity = time === 'night' ? 0.22 : time === 'sunset' ? 0.5 : 0.6;
     es.traverse((o) => { o.geometry?.dispose(); });
   }
   configure(time, weather, stadiumLights = []) {
@@ -90,7 +90,7 @@ export class Environment {
       for (const p of stadiumLights) { const k = (p.x >= 0 ? 1 : 0) + (p.z >= 0 ? 2 : 0); if (!quads.has(k)) quads.set(k, []); quads.get(k).push(p); }
       const groups = [...quads.values()].map((arr) => ({ p: arr.reduce((a, b) => a.add(b), new THREE.Vector3()).multiplyScalar(1 / arr.length), n: arr.length }));
       const totalN = stadiumLights.length;
-      const per = (time === 'night' ? 2.4 : 0.8) * Math.min(1.6, Math.sqrt(totalN / 4));
+      const per = (time === 'night' ? 1.35 : 0.5) * Math.min(1.15, Math.sqrt(totalN / 4));
       for (const { p } of groups) {
         const s = new THREE.SpotLight(fc, per * 900, 260, 0.62, 0.6, 1.6);
         s.position.copy(p); s.target.position.set(p.x * 0.1, 0, p.z * 0.1);
