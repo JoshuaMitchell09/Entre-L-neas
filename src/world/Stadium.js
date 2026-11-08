@@ -471,7 +471,7 @@ export class Stadium {
         const x = -total / 2 + i * (pw + gap) + pw / 2;
         const ch = letters[i];
         const tex = TX.signTexture(ch, cfg.facadeBand || '#6d1f3a', '#ffffff', 512, 512, ch.length > 1 ? 'bold 64px Georgia' : '900 360px Arial Black, Arial');
-        const p = new THREE.Mesh(new THREE.PlaneGeometry(pw, 7.2), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.75 }));
+        const p = new THREE.Mesh(new THREE.PlaneGeometry(pw, 7.2), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.75, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.35 }));
         p.position.set(x, 8.2, gz + 0.33); this.group.add(p);
         this.box(0.45, facH, 0.5, this.m.steel, x + pw / 2 + gap / 2, facH / 2, gz + 0.45);
       }
