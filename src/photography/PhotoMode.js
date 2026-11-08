@@ -78,6 +78,8 @@ export class PhotoMode {
     if (inv.has('monopod') && still && (this.lens.weight > 1 || p.crouch)) r /= Math.pow(2, 2.5);
     if (p.crouch) r *= 0.8;
     if (!still) r *= 3;
+    const b = this.game.buffs || {}, t = this.game.time;
+    if (b.steady > t) r *= 0.72; if (b.tipsy > t) r *= 1.55;
     return r;
   }
   update(dt) {
@@ -192,7 +194,7 @@ export class PhotoMode {
   updateAF(dt) {
     const s = this.s, cam = this.cam, lens = this.lens;
     if (s.af === 'MF') { this.afLocked = false; return; }
-    const speed = 2.5 + 14 * cam.afSpeed * lens.af;
+    const speed = (2.5 + 14 * cam.afSpeed * lens.af) * ((this.game.buffs?.focus || 0) > this.game.time ? 1.2 : 1);
     if (s.af === 'AF-C') {
       let target = null, dist;
       // Seguimiento: si hay un sujeto rastreado y la cámara lo permite, mantenerlo aunque salga del punto AF
