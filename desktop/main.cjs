@@ -49,7 +49,7 @@ app.whenReady().then(async () => {
   Menu.setApplicationMenu(null);
   const win = new BrowserWindow({
     width: 1600, height: 900, minWidth: 1024, minHeight: 600, backgroundColor: '#070b14', title: 'ENTRE LÍNEAS · Fotógrafo de la Liga Tica',
-    autoHideMenuBar: true, show: false, webPreferences: { backgroundThrottling: false, spellcheck: false },
+    autoHideMenuBar: true, show: false, icon: path.join(__dirname, 'assets', 'icon.png'), webPreferences: { backgroundThrottling: false, spellcheck: false },
   });
   win.once('ready-to-show', () => { win.maximize(); win.show(); });
   // F11: pantalla completa · Ctrl+Shift+I: herramientas de desarrollo
