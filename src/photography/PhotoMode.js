@@ -222,8 +222,8 @@ export class PhotoMode {
     if (g.rules && !g.rules.canShoot()) return;
     this.bufferUsed++; inv.drainBattery(1); inv.cardUsed++;
     g.audio?.shutter(this.cam.sound); g.input.rumble(0.05, 0.35, 45);
-    this.kick = ({ basic: 0.0035, sport: 0.0022, pro: 0.0012, flagship: 0.0004 }[this.cam.sound] || 0.002) / (1 + this.lens.weight * 0.5);
-    this.blackout = this.cam.sound === 'flagship' ? 0.02 : this.cam.sound === 'basic' ? 0.09 : 0.05;
+    this.kick = ({ basic: 0.0035, sport: 0.0022, pro: 0.0012, flagship: 0.0004, classic: 0.0045, mirrorless: 0.0002, silent: 0 }[this.cam.sound] || 0.002) / (1 + this.lens.weight * 0.5);
+    this.blackout = { flagship: 0.02, basic: 0.09, classic: 0.12, mirrorless: 0, silent: 0 }[this.cam.sound] ?? 0.05;
     this.capture();
   }
   capture() {

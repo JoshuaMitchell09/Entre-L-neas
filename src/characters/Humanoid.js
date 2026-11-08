@@ -158,6 +158,12 @@ export class Humanoid {
     this.lensMesh.scale.set(r / 0.04, r / 0.04, L);
   }
   showCamera(v) { this.cameraRig.visible = v; }
+  // Tamaño y color del cuerpo de cámara (cada modelo se ve distinto)
+  setCameraBody(look) {
+    if (!look) return; const b = this.cameraRig.children[0];
+    b.scale.set(look.size, look.size * (look.grip ? 1.35 : 1), look.size); b.position.y = look.grip ? -0.018 : 0;
+    if (!b.material.userData.own) { b.material = b.material.clone(); b.material.userData.own = true; } b.material.color.set(look.color);
+  }
   blankPose() {
     return { hipY: 0, hipRX: 0, hipRZ: 0, rootRX: 0, rootRZ: 0, spineRX: 0, spineRY: 0, spineRZ: 0, headRX: 0, headRY: 0,
       shL: [0, 0, 0], shR: [0, 0, 0], elL: 0, elR: 0, thL: [0, 0], thR: [0, 0], knL: 0, knR: 0, ftL: 0, ftR: 0 };
