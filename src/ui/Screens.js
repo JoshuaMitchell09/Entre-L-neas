@@ -31,7 +31,7 @@ export class Screens {
         has ? h('button', { class: 'btn', onclick: () => this.loadMenu() }, '⟳  CARGAR PARTIDA') : null,
         h('button', { class: 'btn', onclick: () => this.settingsStandalone() }, '⚙  AJUSTES'),
         h('button', { class: 'btn', onclick: () => this.credits() }, 'ⓘ  CRÉDITOS')),
-      h('div', { class: 'foot' }, 'v0.5 · Clubes, jugadores y patrocinadores ficticios'));
+      h('div', { class: 'foot' }, 'v0.1 · Prototipo jugable · Clubes, estadios y marcas ficticias'));
     this.ui.openScreen('menu', el);
   }
   async newGameDialog() {

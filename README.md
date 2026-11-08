@@ -27,10 +27,6 @@ El encargo pedía *preferiblemente* Unity 6. El entorno en el que se desarrolló
 
 ---
 
-### Versiones para compartir
-- **Un solo archivo HTML** (`npm run build:html` → `dist-single/index.html`): se abre con doble clic en Chrome/Edge en cualquier sistema, sin instalar nada y sin bloqueos de antivirus. Los sonidos propios se cargan desde Ajustes → Audio.
-- **Ejecutable de Windows** (`npm run build:win` → `release/`): aplicación de escritorio (Electron) con ícono propio; lee los audios de la carpeta `audio` junto al `.exe`. Al no estar firmado, Windows Defender puede ponerlo en cuarentena.
-
 ## Controles
 
 | Acción | Teclado / ratón | Control PS5 (DualSense) |
