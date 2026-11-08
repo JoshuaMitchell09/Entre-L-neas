@@ -282,3 +282,4 @@ select, input[type=text] { background: #0e1830; color: var(--text); border: 1px 
 .phone-hud.has { color: var(--text); border: 1px solid rgba(255,59,79,.6); }
 .phone-hud i { font-style: normal; background: #ff3b4f; color: #fff; border-radius: 9px; padding: 0 6px; margin-left: 6px; font-weight: 700; }
 .toast.fan { border-color: #4ea1ff; color: #d8e9ff; font-style: italic; }
+.ph-hint { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin: 6px 2px 0; }
