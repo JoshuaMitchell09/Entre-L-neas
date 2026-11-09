@@ -380,7 +380,9 @@ export class Stadium {
     const lampM = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff4e0, emissiveIntensity: 0.1 }); this.game.env.register(lampM, 'emissiveIntensity', 0.1, 3, 'flood');
     const glow = new THREE.SpriteMaterial({ map: TX.glowSprite('#fff2d8'), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0, fog: false }); this.game.env.register(glow, 'opacity', 0, 0.9, 'flood');
     if (cfg.lights === 'towers') {
-      const ox = APRON_X + this.D.end * 0.6 + 4, oz = APRON_Z + this.D.near * 0.5 + 4, H = Math.max(36, st.near.topY + 22);
+      // Torres en las esquinas, fuera de la huella de los techos, y más altas que ellos (si no, el techo las tapa)
+      const ox = cfg.corners ? APRON_X + this.D.end + 7 : APRON_X + this.D.end * 0.6 + 5, oz = APRON_Z + this.D.near * 0.5 + 4;
+      const H = Math.max(38, Math.max(st.near.topY, st.far.topY, st.east?.topY || 0) + 26);
       for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
         const x = sx * ox, z = sz * (sz > 0 ? oz : APRON_Z + this.D.far * 0.5 + 4);
         if (cfg.towerStyle === 'lattice') { // torre de celosía (cuatro patas + arriostramiento)
@@ -406,8 +408,10 @@ export class Stadium {
       // Anillo LED bajo el techo
       const ring = [];
       const sides = cfg.roof === 'sides';
-      for (let x = -48; x <= 48; x += sides ? 12 : 24) { ring.push([x, APRON_Z + 3, sides ? this.roofY.near - 0.8 : null]); ring.push([x, -APRON_Z - 3, sides ? this.roofY.far - 0.8 : null]); }
-      if (!sides) for (const z of [-20, 20]) { ring.push([APRON_X + 3, z]); ring.push([-APRON_X - 3, z]); }
+      // Focos en el borde frontal del techo (el techo baja hacia adelante: si quedan atrás, el borde los tapa)
+      const edgeY = (side) => (this.roofY[side] ?? (Math.max(st.near.topY, st.far.topY) + 4.5)) - 0.08 * ((this.D[side] + 4) / 2) - 0.6;
+      for (let x = -48; x <= 48; x += sides ? 12 : 24) { ring.push([x, APRON_Z - 2.4, edgeY('near')]); ring.push([x, -APRON_Z + 2.4, edgeY('far')]); }
+      if (!sides) { const ey = st.east.topY + 4.5 - 0.08 * ((this.D.end + 4) / 2) - 0.6; for (const z of [-20, 20]) { ring.push([APRON_X - 2.4, z, ey]); ring.push([-APRON_X + 2.4, z, ey]); } }
       const yy0 = Math.max(st.near.topY, st.far.topY) + 3.5;
       for (const [x, z, yr] of ring) {
         const yy = yr ?? yy0;
