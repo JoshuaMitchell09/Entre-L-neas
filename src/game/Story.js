@@ -61,6 +61,7 @@ export class Story {
     this.mariana.mapLabel = 'Mariana (acreditaciones)';
     this.guard = add(st.group, { name: 'Oficial Brenes', role: 'story', look: LOOKS.guard, pos: st.spots.guard, yaw: 0, idle: 'loco' });
     this.guard.mapLabel = 'Seguridad';
+    if (city.spots.boothGuard) add(city.group, { name: 'Guarda del parqueo', look: LOOKS.guard, pos: city.spots.boothGuard, yaw: Math.PI, idle: 'loco', chatty: 0.3 }).mapLabel = 'Parqueo de prensa';
     this.alvaro = add(st.group, { name: 'Kendall Rojas', role: 'story', look: LOOKS.alvaro, pos: st.spots.alvaro, yaw: -Math.PI / 2, idle: 'sit', camera: 400 });
     this.alvaro.mapLabel = 'Kendall Rojas';
     g.storyNPCs = [this.mariana, this.guard, this.alvaro];
