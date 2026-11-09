@@ -77,6 +77,14 @@ Todos los controles son reasignables en **Pausa → Ajustes → Teclas**.
 - **Puerta de seguridad nueva:** puerta automática de vidrio transparente, corrediza, con marco de aluminio y sensor. Se abre sola al acercarte una vez que pasaste el control.
   - Antes había una pared detrás de la puerta y el jugador la atravesaba. Ahora la puerta da directo al pasillo.
 
+- **Copa Centroamericana** (ficticia): cuatro partidos internacionales con clubes de la región. Tiene su acreditación especial (fucsia y naranja, franja amarilla "FOTÓGRAFO", chaleco verde, número y holograma) y vallas LED de la copa.
+- **Fotógrafo oficial del club:** a veces el club te llama porque su fotógrafo se enfermó. Te dan una credencial **ALL ACCESS**:
+  - Entrás al vestuario de tu equipo: camisetas con nombres, pizarra táctica y utileros.
+  - Subís al palco VIP sobre el túnel.
+  - Te movés por todo el estadio; solo la cancha queda prohibida mientras se juega.
+- **Parqueo de prensa con aguja:** se entra manejando y la acreditación se recoge adentro, en el toldo de Mariana.
+- **Fuera de juego:** el asistente levanta el banderín, el árbitro pita y se cobra tiro libre.
+- **Estadios más grandes**, con focos que el techo ya no tapa y puertas de seguridad despejadas en todos.
 - **Grabá con tu celular** (*Teléfono → Cámara*): para hacer videos presentando el juego.
   - Formatos: **vertical 9:16** (Reels/TikTok) y **horizontal 16:9** (YouTube).
   - **Cámara trasera** o **selfie** con el brazo estirado. Se puede caminar mientras grabás, y el pulso de la mano se nota como en un celular de verdad.
