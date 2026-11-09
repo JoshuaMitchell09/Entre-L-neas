@@ -77,6 +77,14 @@ Todos los controles son reasignables en **Pausa → Ajustes → Teclas**.
 - **Puerta de seguridad nueva:** puerta automática de vidrio transparente, corrediza, con marco de aluminio y sensor. Se abre sola al acercarte una vez que pasaste el control.
   - Antes había una pared detrás de la puerta y el jugador la atravesaba. Ahora la puerta da directo al pasillo.
 
+- **Desde tu casa hasta el estadio:** la ciudad creció unos 600 m. Cada cobertura empieza en tu casa, al final de la avenida, y llegás como quieras:
+  - 🚗 **Tu carro:** está al frente de la casa. `W`/`S` aceleran y frenan, `A`/`D` giran, `Espacio` pita y `E` te baja. Con el control: R2/L2 y el stick.
+  - 🚌 **Bus Barrio – Estadio:** pasa por 5 paradas. El pasaje cuesta ₡350 y te bajás donde querás con `E`.
+  - 🚕 **Taxi o Uber:** se piden desde el teléfono (*Transporte*). Llegan a donde estás y te llevan al estadio, o de vuelta a tu casa.
+  - Mientras viajás, `T` adelanta el viaje y `C` cambia entre la cámara de afuera y la de adentro.
+- **Trifulcas:** después de algunas faltas fuertes los jugadores se encaran y se empujan, otros llegan a separarlos y el árbitro saca tarjetas. Es un momento fotografiable.
+- **Entrevista al jugador del partido:** al final, en la zona mixta junto al túnel, con periodistas, camarógrafo, fondo de patrocinadores y subtítulos.
+- **Zona de comidas en todos los estadios:** bajo la tribuna, junto al pasillo de prensa. Tiene puestos de chifrijos, perros calientes, granizados y pizza, y lo que comprés tiene efecto en el juego.
 - **Personalizá a tu fotógrafo:** al crear la carrera (o en *Pausa → Perfil → Personalizar apariencia*, o en *Arcade → Apariencia*) elegís:
   - Hombre o mujer.
   - Uno de 10 tonos de piel.
