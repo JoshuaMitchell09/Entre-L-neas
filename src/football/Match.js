@@ -267,6 +267,7 @@ export class Match {
     if (this.phase === 'play' || this.phase === 'goal') this.checkBall();
     for (const p of this.all) {
       if (p.sentOff && p.mode !== 'leaving') continue;
+      if (p.runAhead) { const r = p.runAhead; r.t -= dt; p.pos.x += r.d * r.speed * dt; p.vel.x = r.d * r.speed; if (r.t <= 0) p.runAhead = null; }
       if (p.mode === 'fallen') { p.vel.multiplyScalar(Math.pow(0.04, dt)); p.fallenT -= dt; if (p.fallenT <= 0) { p.mode = 'play'; p.playAnim('getup', 0.9); } }
       p.integrate(dt);
       p.sync(dt, this.ball.pos);
@@ -372,6 +373,8 @@ export class Match {
     else shift -= 0.08;
     if (p.role === 'GK') { fx = -0.97; shift = 0; }
     let x = clamp(fx + shift, -0.97, p.role === 'DEF' ? 0.45 : 0.92);
+    // Línea defensiva: sin el balón, los defensas sostienen la línea (~20 m del arco) y solo se hunden si el balón entra al último cuarto
+    if (!poss && p.role === 'DEF') x = Math.max(x, -bxf > 0.62 ? -0.88 : -0.62);
     let z = fz * 0.88 + (b.z / HW) * (p.role === 'GK' ? 0.0 : 0.28);
     // Desmarques al área cuando el equipo ataca en el último tercio
     if (poss && bxf > 0.45 && p.role === 'FWD') { x = 0.82 + (p.number % 3) * 0.03; z = (fz > 0 ? 0.1 : -0.12) + Math.sin(this.time * 0.7 + p.number) * 0.08; }
@@ -513,8 +516,14 @@ export class Match {
       // Fuera de juego: se juzga en el momento del pase (no en saques de banda, esquina ni de meta)
       const recv = k.extra.target;
       if (recv && this.phase === 'play' && this.time - (this.restartExecAt ?? -9) > 0.6 && this.time - (this.lastOffside ?? -99) > 20) {
-        const m = this.offsideMargin(p, recv);
-        if (m > 0.3 && Math.random() < (m > 1 ? 0.93 : 0.72)) this.pendingOffside = { t: 0.55, recv, spot: recv.pos.clone(), team: p.team };
+        let m = this.offsideMargin(p, recv);
+        // El delantero a veces arranca antes de tiempo: si está cerca de la línea, queda adelantado al salir el pase
+        const raw = this.lineGap(p, recv);
+        if (m <= 0 && recv.role === 'FWD' && raw > -5.5 && raw < 0.3 && Math.random() < 0.45) {
+          // Arranque en carrera antes de tiempo: en ~0,6 s cruza la línea (se ve en la cancha)
+          const push = -raw + rand(0.6, 1.4); recv.runAhead = { t: 0.6, speed: push / 0.6, d: this.dir(p.team) };
+          this.pendingOffside = { t: 0.62, recv, team: p.team, early: true };
+        } else if (m > 0.3 && Math.random() < (m > 1 ? 0.93 : 0.75)) this.pendingOffside = { t: 0.55, recv, spot: recv.pos.clone(), team: p.team };
       }
       if (k.kind === 'cross') { this.excite = Math.max(this.excite, 0.45); b.cross = true; }
     } else if (k.kind === 'corner') { this.logEvent('corner', [p], p.pos, { team: p.team }); b.cross = true; }
@@ -526,8 +535,16 @@ export class Match {
     const defs = this.active(1 - passer.team).map((q) => q.pos.x * d).sort((a, b) => b - a);
     return Math.max(0, rx - Math.max(defs[1] ?? HL, bx));
   }
+  // Distancia con signo entre el receptor y la línea (penúltimo defensor o balón): >0 adelantado
+  lineGap(passer, recv) {
+    const d = this.dir(passer.team), rx = recv.pos.x * d, bx = this.ball.pos.x * d;
+    if (rx <= 0) return -99;
+    const defs = this.active(1 - passer.team).map((q) => q.pos.x * d).sort((a, b) => b - a);
+    return rx - Math.max(defs[1] ?? HL, bx);
+  }
   callOffside(o) {
     const recv = o.recv, ar = recv.pos.x > 0 ? this.ars[0] : this.ars[1];
+    if (!o.spot) o.spot = recv.pos.clone();
     this.lastOffside = this.time; this.whistle(1);
     ar.h.play('flagUp', 2.6); ar.flagT = 2.6;
     this.logEvent('fueradejuego', [recv, ar], recv.pos, { team: o.team, peak: this.time + 0.3 });

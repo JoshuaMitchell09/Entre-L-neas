@@ -541,7 +541,7 @@ export class Stadium {
     this.box(6.6, deckTop - 3.0, 0.3, wallM, 0, 3.0 + (deckTop - 3.0) / 2, za - 0.15);
     // Losa del palco (techo de los vestuarios) y su borde trasero
     this.box(2 * xr, deckTop - Hc, z0 - za + 0.3, this.m.concreteDark, 0, (Hc + deckTop) / 2, (za + z0) / 2 - 0.15);
-    this.col.add(-xr, Hc, za - 0.3, xr, deckTop, z0, 'nostand');
+    this.col.add(-xr, Hc, za - 0.3, xr, deckTop, z0); // se puede pisar (piso del palco)
     const back = 48.8; this.box(2 * xr, 1.6, 0.3, wallM, 0, deckTop + 0.8, back); this.col.add(-xr, deckTop, back - 0.15, xr, deckTop + 1.6, back + 0.15);
     for (const s of [-1, 1]) { this.box(0.3, 1.6, back - za, wallM, s * xr, deckTop + 0.8, (za + back) / 2); this.col.add(s * xr - 0.15, deckTop, za, s * xr + 0.15, deckTop + 1.6, back); }
     for (const s of [-1, 1]) W(s * 3.3, (za + z0) / 2, 0.3, z0 - za, Hc); // tabiques entre túnel y vestuarios (hasta la losa)

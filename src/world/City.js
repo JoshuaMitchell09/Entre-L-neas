@@ -176,7 +176,7 @@ export class City {
     const paint = new THREE.MeshBasicMaterial({ color: 0xf2f2f2 }), yellow = new THREE.MeshBasicMaterial({ color: 0xf2c500 });
     // Cajones (dos filas) con "PRENSA" pintado
     const stalls = [];
-    for (const [rz, dir] of [[z0 + 2.6, 1], [z1 - 2.8, -1]]) for (let x = 32; x <= 58; x += 2.9) {
+    for (const [rz, dir] of [[z0 + 2.6, 1], [z1 - 2.8, -1]]) for (let x = 32; x <= (dir < 0 ? 49.5 : 58); x += 2.9) { // la fila de la calle deja libre la entrada
       this.plane(0.1, 5, paint, x - 1.45, 0.012, rz); stalls.push({ x, z: rz, dir });
       const t = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.55), new THREE.MeshBasicMaterial({ map: TX.signTexture('PRENSA', '#00000000', '#f2c500', 256, 64, 'bold 44px Arial'), transparent: true }));
       t.rotation.x = -Math.PI / 2; t.rotation.z = dir > 0 ? 0 : Math.PI; t.position.set(x, 0.014, rz + dir * 1.6); this.group.add(t);
