@@ -97,8 +97,17 @@ export class Story {
       k.mapLabel = sh.name; shopNPCs.push([sh, k]);
       for (const seat of sh.seats) if (Math.random() < (sh.kind === 'bar' ? 0.55 : 0.4)) add(city.group, { name: 'Cliente', look: randomFan(Math.random() < 0.6 ? home : away), pos: seat.pos.clone().setY(0), yaw: seat.yaw, idle: seat.bar ? 'loco' : 'sit', chatty: 0.8 });
     }
+    // Zona de comidas del estadio: vendedores en cada puesto y aficionados comiendo
+    const stallNPCs = [];
+    for (const fs of st.foodStalls || []) {
+      const v = add(st.group, { name: 'Vendedor', role: 'story', look: KEEPER_LOOKS[fs.kind], pos: fs.vendor, yaw: fs.vendorYaw, idle: 'loco', chatty: 0.6 });
+      v.mapLabel = fs.name; stallNPCs.push([fs, v]);
+    }
+    for (const tp of st.foodTables || []) for (let k = 0; k < 2; k++) if (Math.random() < 0.75) { const a = k * Math.PI + rand(-0.4, 0.4); add(st.group, { name: 'Aficionado', look: randomFan(Math.random() < 0.7 ? home : away), pos: tp.clone().add(new THREE.Vector3(Math.sin(a) * 0.75, 0, Math.cos(a) * 0.75)), yaw: a + Math.PI, idle: pick(['talk', 'loco', 'talk']), chatty: 0.9 }); }
+    if (st.foodStalls) for (let k = 0; k < 3; k++) { const fs = pick(st.foodStalls); add(st.group, { name: 'Aficionado', look: randomFan(home), pos: fs.counter.clone().setY(0).add(new THREE.Vector3(rand(-0.8, 0.8), 0, 0.6 + k * 0.1)), yaw: Math.PI, idle: 'loco', chatty: 0.5 }); }
     // ---------- Interacciones ----------
     I.clear();
+    for (const [fs, v] of stallNPCs) I.add({ position: fs.counter, radius: 1.8, prompt: () => `<kbd>${g.ui.key('interact')}</kbd>Comprar en ${fs.name}`, onInteract: () => { v.playOnce('talk', 3); g.audio?.talk?.(v.pos.clone().setY(1.6), 1.2, 1.2); openShopCounter(g, fs); } });
     for (const [sh, k] of shopNPCs) I.add({ position: sh.counter, radius: 2.2, prompt: () => `<kbd>${g.ui.key('interact')}</kbd>Comprar en ${sh.name}`, onInteract: () => { k.playOnce('talk', 3); g.audio?.talk?.(k.pos.clone().setY(1.6), 1.2, sh.kind === 'bar' ? 0.9 : 1.4); openShopCounter(g, sh); } });
     I.add({ position: this.mariana.pos.clone().setY(1.2).add(new THREE.Vector3(0, 0, 2)), radius: 3.2, prompt: () => `<kbd>${g.ui.key('interact')}</kbd>Hablar con Mariana`, onInteract: () => this.talkMariana() });
     I.add({ position: st.spots.guard.clone().setY(1.2), radius: 3.5, prompt: () => this.stage === 'street' || this.stage === 'credential' ? `<kbd>${g.ui.key('interact')}</kbd>Presentarse en seguridad` : null, onInteract: () => this.security() });
