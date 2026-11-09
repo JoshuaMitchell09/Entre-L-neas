@@ -77,6 +77,12 @@ Todos los controles son reasignables en **Pausa → Ajustes → Teclas**.
 - **Puerta de seguridad nueva:** puerta automática de vidrio transparente, corrediza, con marco de aluminio y sensor. Se abre sola al acercarte una vez que pasaste el control.
   - Antes había una pared detrás de la puerta y el jugador la atravesaba. Ahora la puerta da directo al pasillo.
 
+- **Grabá con tu celular** (*Teléfono → Cámara*): para hacer videos presentando el juego.
+  - Formatos: **vertical 9:16** (Reels/TikTok) y **horizontal 16:9** (YouTube).
+  - **Cámara trasera** o **selfie** con el brazo estirado. Se puede caminar mientras grabás, y el pulso de la mano se nota como en un celular de verdad.
+  - **Teclas:** `R` o clic graba y detiene, `V` cambia de formato, `F` alterna selfie y trasera, la rueda hace zoom y `Esc` sale.
+  - Al terminar se descarga un video **MP4/WebM** con el sonido del juego (720×1280 o 1280×720; 1080p si la pantalla da). La interfaz no sale en el video.
+  - El **modo dron** también graba en vertical: presioná `V` antes de grabar.
 - **Desde tu casa hasta el estadio:** la ciudad creció unos 600 m. Cada cobertura empieza en tu casa, al final de la avenida, y llegás como quieras:
   - 🚗 **Tu carro:** está al frente de la casa. `W`/`S` aceleran y frenan, `A`/`D` giran, `Espacio` pita y `E` te baja. Con el control: R2/L2 y el stick.
   - 🚌 **Bus Barrio – Estadio:** pasa por 5 paradas. El pasaje cuesta ₡350 y te bajás donde querás con `E`.
