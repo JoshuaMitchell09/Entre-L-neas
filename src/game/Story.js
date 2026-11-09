@@ -333,9 +333,17 @@ export class Story {
   }
   onMatchEnd() {
     const g = this.game; if (!this.ev || !g.inEvent) return;
-    if (g.arcade) { g.arcadeEnd(); return; }
-    this.stage = 'post'; this.setObjective(); g.missions.add('m_entrega');
-    g.ui.toast('¡Final del partido! Entregá tus fotos en la sala de prensa.', 'mission', 5000);
+    const iv = g.match?.interview;
+    const who = iv ? `${iv.mvp.name} (#${iv.mvp.number})` : 'el jugador del partido';
+    if (g.arcade) {
+      g.ui.toast(`🎙️ Entrevista a ${who} en la zona mixta, junto al túnel. Al terminar verás tus resultados.`, 'mission', 6000);
+      g.ui.setObjective(`Fotografiá la entrevista a ${who} junto al túnel. (Esc → Terminar partido para ver resultados ya.)`);
+      let fired = false; const fin = () => { if (!fired) { fired = true; g.arcadeEnd(); } };
+      g.events.on('match:interviewDone', () => setTimeout(fin, 4000)); setTimeout(fin, 70000);
+      return;
+    }
+    this.stage = 'post'; this.setObjective(); g.missions.add('m_entrevista'); g.missions.add('m_entrega');
+    g.ui.toast(`¡Final del partido! 🎙️ ${who} da la entrevista en la zona mixta, junto al túnel. Después entregá tus fotos en la sala de prensa.`, 'mission', 7000);
     g.saves.save('auto');
   }
 }
