@@ -49,6 +49,7 @@ export class Travel {
   syncObj(v) { v.obj.position.copy(v.pos); v.obj.rotation.y = v.yaw; }
   // ---------- Subir / bajar ----------
   enter(mode, vehicle) {
+    if (!vehicle) return; // sin vehículo no hay viaje (evita dejar el modo a medias)
     const g = this.game; if (g.photoMode.active) g.photoMode.exit();
     this.mode = mode; this.vehicle = vehicle; this.view = 'out'; this.ff = 1;
     // La misma pulsación que te subió no debe bajarte: se consume y hay un margen antes de poder bajarse

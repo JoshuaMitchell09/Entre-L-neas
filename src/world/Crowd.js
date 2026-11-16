@@ -20,11 +20,13 @@ function personGeometry() {
     ng.setAttribute('part', new THREE.BufferAttribute(new Float32Array(ng.attributes.position.count).fill(part), 1));
     parts.push(ng);
   };
-  const torso = new THREE.CylinderGeometry(0.2, 0.16, 0.5, 7); torso.scale(1, 1, 0.62); torso.translate(0, 0.55, 0); add(torso, 0);
-  const head = new THREE.SphereGeometry(0.105, 8, 5); head.scale(0.92, 1.05, 1); head.translate(0, 0.95, 0.01); add(head, 3);
-  const hair = new THREE.SphereGeometry(0.113, 8, 3, 0, Math.PI * 2, 0, Math.PI * 0.5); hair.translate(0, 0.965, -0.004); add(hair, 5);
-  const armL = new THREE.CylinderGeometry(0.052, 0.044, 0.48, 5); armL.translate(-0.25, 0.53, 0); add(armL, 1);
-  const armR = new THREE.CylinderGeometry(0.052, 0.044, 0.48, 5); armR.translate(0.25, 0.53, 0); add(armR, 2);
+  // Figura liviana (~100 triángulos): desde la gradería se ve igual y el público entero cuesta casi la mitad
+  const torso = new THREE.CylinderGeometry(0.2, 0.16, 0.5, 6, 1, true); torso.scale(1, 1, 0.62); torso.translate(0, 0.55, 0); add(torso, 0);
+  const shoulders = new THREE.CircleGeometry(0.2, 6); shoulders.rotateX(-Math.PI / 2); shoulders.scale(1, 1, 0.62); shoulders.translate(0, 0.8, 0); add(shoulders, 0);
+  const head = new THREE.SphereGeometry(0.105, 7, 4); head.scale(0.92, 1.05, 1); head.translate(0, 0.95, 0.01); add(head, 3);
+  const hair = new THREE.SphereGeometry(0.113, 7, 2, 0, Math.PI * 2, 0, Math.PI * 0.5); hair.translate(0, 0.965, -0.004); add(hair, 5);
+  const armL = new THREE.CylinderGeometry(0.052, 0.044, 0.48, 4, 1, true); armL.translate(-0.25, 0.53, 0); add(armL, 1);
+  const armR = new THREE.CylinderGeometry(0.052, 0.044, 0.48, 4, 1, true); armR.translate(0.25, 0.53, 0); add(armR, 2);
   const legs = new THREE.BoxGeometry(0.34, 0.42, 0.18); legs.translate(0, 0.1, 0.03); add(legs, 4);
   for (const p of parts) for (const k of Object.keys(p.attributes)) if (!['position', 'normal', 'part'].includes(k)) p.deleteAttribute(k);
   return mergeGeometries(parts);

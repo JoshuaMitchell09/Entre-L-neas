@@ -6,7 +6,7 @@ export const MISSION_DEFS = {
   m_preparar: { title: 'Prepará tu equipo', desc: 'En la zona de preparación del pasillo: dejá la mochila, montá el lente, batería y tarjeta.', kind: 'story', target: 1, trigger: 'story:prepared', reward: {} },
   m_cancha: { title: 'Encontrá a Kendall Rojas', desc: 'Atravesá el túnel y buscalo en la zona de prensa detrás de la portería este.', kind: 'story', target: 1, trigger: 'story:alvaro', reward: { rep: 1 } },
   m_calentamiento: { title: 'Primera cobertura', desc: 'Capturá 5 fotografías del calentamiento (calidad mínima 35).', kind: 'event', target: 5, photo: { tags: ['calentamiento'], min: 35 }, reward: { money: 10000, rep: 2 } },
-  m_entrega: { title: 'Tu primera entrega', desc: 'Entregá al editor al menos una fotografía válida (40 o más).', kind: 'story', target: 1, trigger: 'delivery:valid', reward: { money: 5000, rep: 2 } },
+  m_entrega: { title: 'Tu primera entrega', desc: 'Entregá al menos una fotografía válida (40 o más).', kind: 'story', target: 1, trigger: 'delivery:valid', reward: { money: 5000, rep: 2 } },
   m_gol: { title: 'El gol', desc: 'Capturá una fotografía de un gol (calidad mínima 50).', kind: 'event', target: 1, photo: { tags: ['gol'], min: 50 }, reward: { money: 30000, rep: 3 } },
   m_celebracion: { title: 'La celebración', desc: 'Fotografiá una celebración después de un gol (calidad mínima 55).', kind: 'event', target: 1, photo: { tags: ['celebracion'], min: 55 }, reward: { money: 22000, rep: 2 } },
   m_portero: { title: 'El guardameta', desc: 'Capturá 3 atajadas (calidad mínima 45).', kind: 'event', target: 3, photo: { tags: ['atajada'], min: 45 }, reward: { money: 45000, rep: 4 } },

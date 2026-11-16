@@ -1,7 +1,7 @@
 import { h } from './dom.js';
 
 // Notas de la versión: se muestran al abrir el juego cuando hay una versión nueva (y desde «Novedades» en el menú).
-export const VERSION = '0.10.0';
+export const VERSION = '0.10.1';
 export const AUTHOR = 'MitchellsVisuals';
 export const COPYRIGHT = `© ${new Date().getFullYear()} ${AUTHOR}. Todos los derechos reservados.`;
 
@@ -25,6 +25,11 @@ export const CHANGELOG = {
     ['📱', 'Grabar con el celular', 'Videos en horizontal o vertical para presentar tus mejores tomas.'],
   ],
   fixes: [
+    'La memoria de video ya no crece en cada partido: se liberan jugadores, texturas, materiales y esqueletos al cambiar de nivel (antes quedaban ~100 texturas por partido).',
+    'Rendimiento: el público usa casi la mitad de triángulos y solo 3 luces puntuales siguen al jugador (antes 11 a la vez).',
+    'Los NPC lejanos se animan con menos frecuencia y la pantalla de la cámara no se dibuja con el juego en pausa.',
+    'En el modo arcade, un partido anterior ya no puede cerrar antes de tiempo el partido actual.',
+    'Salir al menú a mitad de una escena (preparación, seguridad, dron) ya no deja al jugador bloqueado en el siguiente evento.',
     'La entrada de la zona de comidas ahora tiene puerta corrediza de vidrio.',
     'En La Cantera y el Centro de Alto Rendimiento el letrero ya no tapa la puerta.',
     'La foto del carnet ya no se pide al recoger la acreditación (va al crear la carrera) y el botón de guardar la acreditación siempre se ve.',

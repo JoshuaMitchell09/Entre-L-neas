@@ -454,7 +454,9 @@ export class Story {
       g.ui.toast(`🎙️ Entrevista a ${who} en la zona mixta, junto al túnel. Al terminar verás tus resultados.`, 'mission', 6000);
       g.ui.setObjective(`Fotografiá la entrevista a ${who} junto al túnel. (Esc → Terminar partido para ver resultados ya.)`);
       let fired = false; const fin = () => { if (!fired) { fired = true; g.arcadeEnd(); } };
-      g.events.on('match:interviewDone', () => setTimeout(fin, 4000)); setTimeout(fin, 70000);
+      // Un solo listener por partido (antes se acumulaban y uno viejo podía cerrar un arcade posterior)
+      const m0 = g.match, off = g.events.once('match:interviewDone', () => setTimeout(() => { if (g.match === m0) fin(); }, 4000));
+      setTimeout(() => { off(); if (g.match === m0) fin(); }, 70000);
       return;
     }
     if (this.amateur) { const sp = g.stadium.spots.alvaro; this.mariana.route = null; this.mariana.pos.set(sp.x, 0, sp.z); this.mariana.root.position.copy(this.mariana.pos); }
