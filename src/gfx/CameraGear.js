@@ -94,7 +94,7 @@ export class LiveView {
   }
   // Renderiza la vista en vivo unas 8 veces por segundo, desde donde apunta la cámara del fotógrafo
   update(dt) {
-    const g = this.game, p = g.player; if (!p || g.state !== 'play' || g.photoMode.active) return;
+    const g = this.game, p = g.player; if (!p || g.state !== 'play' || g.photoMode.active || g.ui.screen) return;
     const fp = g.viewModel?.root.visible, tp = !fp && p.cameraEquipped && p.root.visible;
     if (!fp && !tp) return;
     this.t -= dt; if (this.t > 0) return; const ql = g.settings?.data?.quality; this.t = ql === 'bajo' ? 0.3 : ql === 'medio' ? 0.16 : 0.1; this.hudN = (this.hudN || 0) + 1; if (this.hudN % 6 === 0) this.drawHud();

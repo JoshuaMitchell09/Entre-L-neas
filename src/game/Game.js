@@ -121,10 +121,28 @@ export class Game {
   }
   // ---------------- Niveles ----------------
   disposeLevel() {
+    // Estado temporal de escenas: si se salió a mitad de una (preparación, seguridad, dron…), no debe quedar pegado
+    this.cinematic = false; this.camOverride = null; if (this.story) this.story.timers = [];
+    if (this.ui.customNavRoot) { this.ui.customNavRoot.remove(); this.ui.customNavRoot = null; }
+    if (this.drone?.active) this.drone.exit(); if (this.phoneCam?.active) this.phoneCam.exit();
+    if (this.photoMode?.active) this.photoMode.exit();
     this.menuPrevEnv = null; if (this.menuProp?.parent) this.scene.remove(this.menuProp);
+    // Liberar geometrías, materiales, texturas y esqueletos del nivel (antes solo geometrías: la memoria de video crecía en cada partido).
+    // El grupo del partido se libera también (antes se separaba del estadio antes de recorrerlo y quedaba entero en memoria).
+    const matchGroup = this.match?.group;
     this.match?.dispose(); this.match = null;
-    for (const o of [this.stadium?.group, this.city?.group]) if (o) { this.scene.remove(o); o.traverse((c) => { if (c.isMesh || c.isLine || c.isPoints) { c.geometry?.dispose(); } }); }
-    this.scenery?.dispose(); this.scenery = null;
+    const seen = new Set(), free = (x) => { if (x && !seen.has(x)) { seen.add(x); x.dispose(); } };
+    for (const o of [matchGroup, this.stadium?.group, this.city?.group, this.scenery?.group]) if (o) {
+      o.parent?.remove(o);
+      o.traverse((c) => {
+        if (!(c.isMesh || c.isLine || c.isPoints || c.isSprite)) return;
+        if (!c.isSprite) free(c.geometry);
+        if (c.isInstancedMesh) c.dispose?.();
+        if (c.isSkinnedMesh) free(c.skeleton);
+        for (const m of Array.isArray(c.material) ? c.material : [c.material]) { if (!m) continue; for (const k in m) { const v = m[k]; if (v && v.isTexture && !v.isRenderTargetTexture) free(v); } free(m); }
+      });
+    }
+    this.scenery = null;
     this.stadium = null; this.city = null; this.collision = new CollisionWorld(); this.interaction.clear(); this.rules.reset();
     this.story.clear();
   }
@@ -144,6 +162,7 @@ export class Game {
     onProgress(0.8, 'Calentando a los equipos…');
     this.match = new Match(this, this.stadium, home, away, { halfSeconds: +this.settings.data.halfSeconds || 240, youth: !!(ev.youth || home.youth), pitch: this.stadium.cfg.pitch });
     this.collision.rebuild();
+    this.collectPointLights();
     this.scene.add(this.player.root);
     this.player.avatar.setLensLength(this.inventory.lens.max);
   }
@@ -180,6 +199,37 @@ export class Game {
     this.ui.closeScreen(true);
     await showChapter(this.ui, 1);
     await this.startEvent(this.firstEventOfTier());
+  }
+  // ---------- Grupo de luces puntuales ----------
+  // Cada luz puntual encarece todos los materiales (se calcula en cada píxel). Las luces de interiores y postes
+  // pasan a ser «fuentes» y solo 3 luces reales se ubican en las fuentes más cercanas al jugador.
+  collectPointLights() {
+    const P = this.lightPool || (this.lightPool = { lights: [], sources: [], t: 0 });
+    if (!P.lights.length) for (let i = 0; i < 3; i++) { const l = new THREE.PointLight(0xffffff, 0, 10, 1.5); l.castShadow = false; this.scene.add(l); P.lights.push(l); }
+    P.sources = [];
+    for (const root of [this.stadium?.group, this.city?.group]) {
+      if (!root) continue;
+      const found = []; root.traverse((o) => { if (o.isPointLight) found.push(o); });
+      for (const l of found) { const parent = l.parent; parent.remove(l); P.sources.push({ l, parent }); }
+    }
+    P.t = 0;
+  }
+  updateLightPool(dt) {
+    const P = this.lightPool; if (!P) return;
+    P.t -= dt; if (P.t > 0) return; P.t = 0.15;
+    const ref = this.state === 'play' ? this.player.pos : this.camera.position, w = new THREE.Vector3();
+    const cand = [];
+    for (const s of P.sources) {
+      if (s.l.intensity <= 0.01) continue;
+      w.copy(s.l.position); s.parent.localToWorld(w);
+      const d = w.distanceTo(ref) - (s.l.distance || 20);
+      if (d < 25) cand.push({ s, d, p: w.clone() });
+    }
+    cand.sort((a, b) => a.d - b.d);
+    P.lights.forEach((L, i) => {
+      const c = cand[i]; if (!c) { L.intensity = 0; return; }
+      L.position.copy(c.p); L.color.copy(c.s.l.color); L.intensity = c.s.l.intensity; L.distance = c.s.l.distance; L.decay = c.s.l.decay;
+    });
   }
   firstEventOfTier() { const av = this.career.available(); return av.find((e) => !e.done && !e.locked && e.tierIdx === this.career.tier) || av.find((e) => !e.locked && !e.done) || EVENTS.find((e) => e.id === 'am1'); }
   // Avance del modo historia al volver a la redacción: contactos nuevos, respuestas de correo y capítulos
@@ -401,6 +451,7 @@ export class Game {
   }
   update(dt) {
     this.time += dt; this.lastDt = dt;
+    this.updateLightPool(dt);
     if ((this.state === 'hub' || this.state === 'play') && !this.arcade && this.career.mail?.sent.length) { this.mailT = (this.mailT || 0) - dt; if (this.mailT <= 0) { this.mailT = 2; this.mailCheck(); } }
     this.input.pollPad();
     if (this.input.pad && !this.padAnnounced) { this.padAnnounced = true; this.audio.start(); this.ui.toast(this.input.isPlayStation ? '🎮 Control de PlayStation conectado' : '🎮 Control conectado', 'good'); }
@@ -470,7 +521,10 @@ export class Game {
       const inCity = n.root.parent === this.city?.group;
       const vis = (inCity ? !deepInside : !outside || n === this.story.guard) && Math.abs(n.pos.x - p.pos.x) < 170;
       n.root.visible = vis;
-      if (vis && n.pos.distanceTo(p.pos) < 140) n.update(dt, p.pos);
+      if (!vis) continue;
+      const nd = n.pos.distanceTo(p.pos);
+      if (nd < 45) n.update(dt, p.pos);
+      else if (nd < 140) { n.acc = (n.acc || 0) + dt; n.tick = (n.tick || 0) + 1; if (n.tick % 3 === 0) { n.update(n.acc, p.pos); n.acc = 0; } } // lejos: animación cada 3 cuadros
     }
     this.story.update(dt); this.rules.update(dt); this.crowdLife.update(dt); this.phone.update(dt); this.travel.update(dt); this.phoneCam.update(dt);
     this.env.update(dt, st && Math.abs(p.pos.x) < 75 && Math.abs(p.pos.z) < 48 ? new THREE.Vector3(0, 0, 0) : this.camera.position, this.time, this.clock / 60);
